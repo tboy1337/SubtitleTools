@@ -2,7 +2,7 @@
 
 This module provides functionality for post-processing subtitle files,
 now using native Python implementations instead of external dependencies.
-Previous Docker/SubtitleEdit-CLI functionality has been replaced with
+Previous SubtitleEdit-CLI functionality has been replaced with
 equivalent Python implementations for better portability and performance.
 """
 
@@ -21,7 +21,6 @@ def apply_subtitle_edit_postprocess(
     subtitle_file: Union[str, Path],
     operations: List[str],
     output_format: str = "subrip",
-    docker_image: str = "seconv:1.0",
 ) -> bool:
     """Apply post-processing operations using native Python implementation.
 
@@ -29,7 +28,6 @@ def apply_subtitle_edit_postprocess(
         subtitle_file: Path to the subtitle file
         operations: List of post-processing operations
         output_format: Output format (subrip, ass, vtt, etc.)
-        docker_image: Deprecated - kept for compatibility
 
     Returns:
         True if post-processing was successful
@@ -79,7 +77,7 @@ def apply_subtitle_edit_postprocess(
         return False
 
 
-def generate_docker_command(
+def generate_processing_description(
     subtitle_file: Union[str, Path],
     *,  # Force keyword-only arguments
     fix_common_errors: bool = False,
@@ -88,9 +86,8 @@ def generate_docker_command(
     fix_punctuation: bool = False,
     ocr_fix: bool = False,
     convert_to: Optional[str] = None,
-    docker_image: str = "seconv:1.0",
 ) -> Optional[str]:
-    """Generate a processing command string (deprecated Docker functionality).
+    """Generate a processing description string.
 
     Args:
         subtitle_file: Path to the subtitle file
@@ -100,7 +97,6 @@ def generate_docker_command(
         fix_punctuation: Fix punctuation issues
         ocr_fix: Apply OCR fixes
         convert_to: Convert to specified format
-        docker_image: Deprecated - kept for compatibility
 
     Returns:
         Processing description string or None if no operations specified
@@ -124,7 +120,7 @@ def generate_docker_command(
     subtitle_path = Path(subtitle_file)
     output_format = convert_to if convert_to else "srt"
 
-    # Return description of what will be processed (no actual Docker command)
+    # Return description of what will be processed with native implementation
     cmd_desc = f"Process {subtitle_path.name} with operations: {', '.join(operations)}"
     if convert_to:
         cmd_desc += f" and convert to {output_format}"
@@ -132,26 +128,16 @@ def generate_docker_command(
     return cmd_desc
 
 
-def check_docker_available() -> bool:
-    """Check if Docker is available and running (deprecated).
+# Legacy compatibility functions - deprecated
+
+
+def check_postprocess_available() -> bool:
+    """Check if post-processing is available.
 
     Returns:
-        Always returns True since Docker is no longer required
+        Always returns True since native implementation is always available
     """
-    logger.debug("Docker check requested - returning True (native implementation active)")
-    return True
-
-
-def check_subtitle_edit_image(docker_image: str = "seconv:1.0") -> bool:
-    """Check if the Subtitle Edit CLI Docker image is available (deprecated).
-
-    Args:
-        docker_image: Docker image name to check (ignored)
-
-    Returns:
-        Always returns True since Docker images are no longer required
-    """
-    logger.debug("Subtitle Edit image check requested - returning True (native implementation active)")
+    logger.debug("Post-processing availability check - native implementation always available")
     return True
 
 
@@ -162,8 +148,7 @@ def validate_postprocess_environment() -> Dict[str, bool]:
         Dictionary with validation results (always valid for native implementation)
     """
     checks = {
-        "docker_available": True,      # Native implementation always available
-        "subtitle_edit_image": True,   # Native implementation always available
+            "postprocess_available": True,   # Native implementation always available
     }
 
     return checks

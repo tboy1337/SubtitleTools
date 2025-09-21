@@ -443,11 +443,10 @@ class TestSubtitleWorkflow:
                         workflow._translate_subtitles([Mock()], "en", "es")
 
     @patch('subtitletools.core.workflow.validate_postprocess_environment')
-    def test_apply_postprocessing_no_docker(self, mock_validate_env: Mock) -> None:
-        """Test _apply_postprocessing when Docker is not available."""
+    def test_apply_postprocessing_native_implementation(self, mock_validate_env: Mock) -> None:
+        """Test _apply_postprocessing with native implementation (always available)."""
         mock_validate_env.return_value = {
-            "docker_available": False,
-            "subtitle_edit_image": True
+            "postprocess_available": True
         }
 
         with patch('subtitletools.core.workflow.SubWhisperTranscriber'):
@@ -466,8 +465,7 @@ class TestSubtitleWorkflow:
     def test_apply_postprocessing_no_image(self, mock_validate_env: Mock) -> None:
         """Test _apply_postprocessing when Subtitle Edit image is not available."""
         mock_validate_env.return_value = {
-            "docker_available": True,
-            "subtitle_edit_image": False
+            "postprocess_available": True
         }
 
         with patch('subtitletools.core.workflow.SubWhisperTranscriber'):
@@ -487,8 +485,7 @@ class TestSubtitleWorkflow:
     def test_apply_postprocessing_success(self, mock_apply: Mock, mock_validate_env: Mock) -> None:
         """Test successful _apply_postprocessing."""
         mock_validate_env.return_value = {
-            "docker_available": True,
-            "subtitle_edit_image": True
+            "postprocess_available": True
         }
         mock_apply.return_value = True
 
@@ -633,7 +630,7 @@ class TestSubtitleWorkflow:
         with patch('subtitletools.core.workflow.SubWhisperTranscriber') as mock_transcriber_class:
             with patch('subtitletools.core.workflow.SubtitleTranslator') as mock_translator_class:
                 with patch('subtitletools.core.workflow.SubtitleProcessor'):
-                    with patch('subtitletools.core.workflow.check_docker_available', return_value=True):
+                    # Native processing is always available
 
                         # Mock instances
                         mock_transcriber = Mock()
@@ -855,10 +852,9 @@ class TestWorkflowMissingCoverage:
     def test_apply_postprocessing_apply_error(self, mock_apply: Mock, mock_validate_env: Mock) -> None:
         """Test _apply_postprocessing when apply function fails."""
         mock_validate_env.return_value = {
-            "docker_available": True,
-            "subtitle_edit_image": True
+            "postprocess_available": True
         }
-        mock_apply.side_effect = Exception("Docker error")
+        mock_apply.side_effect = Exception("Processing error")
 
         with patch('subtitletools.core.workflow.SubWhisperTranscriber'):
             with patch('subtitletools.core.workflow.SubtitleTranslator'):
@@ -948,12 +944,12 @@ class TestWorkflowMissingCoverage:
                     assert len(result) >= 1
                     workflow.translate_existing_subtitles.assert_called_once()
 
-    def test_get_workflow_info_docker_unavailable(self) -> None:
-        """Test get_workflow_info when Docker is not available."""
+    def test_get_workflow_info_native_processing(self) -> None:
+        """Test get_workflow_info with native processing (always available)."""
         with patch('subtitletools.core.workflow.SubWhisperTranscriber') as mock_transcriber_class:
             with patch('subtitletools.core.workflow.SubtitleTranslator') as mock_translator_class:
                 with patch('subtitletools.core.workflow.SubtitleProcessor'):
-                    with patch('subtitletools.core.workflow.check_docker_available', return_value=False):
+                    # Native processing is always available
 
                         # Mock instances
                         mock_transcriber = Mock()

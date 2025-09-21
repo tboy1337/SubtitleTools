@@ -144,14 +144,7 @@ def mock_requests():
         yield mock_session
 
 
-@pytest.fixture
-def mock_docker():
-    """Mock docker for post-processing testing."""
-    with patch('subprocess.run') as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = "Success"
-        mock_run.return_value.stderr = ""
-        yield mock_run
+# Post-processing is now handled natively - no external dependencies needed
 
 
 # Utility functions for tests

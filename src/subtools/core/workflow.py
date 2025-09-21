@@ -369,13 +369,9 @@ class SubtitleWorkflow:
         try:
             # Check if post-processing environment is available  
             env_check = validate_postprocess_environment()
-            # Environment check is now always valid with native implementation
-            if not env_check["docker_available"]:  # Always True now
-                logger.debug("Post-processing environment validated")
-                pass
-            # Subtitle Edit image check is no longer needed with native implementation
-            if not env_check["subtitle_edit_image"]:  # Always True now
-                logger.debug("Subtitle processing available via native implementation")
+            # Native implementation is always available
+            if not env_check.get("postprocess_available", True):
+                logger.debug("Post-processing available via native implementation")
                 pass
 
             # Apply operations

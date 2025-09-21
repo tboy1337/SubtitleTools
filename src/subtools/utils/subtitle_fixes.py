@@ -1,7 +1,7 @@
 """Subtitle fixes implementation - Python port of SubtitleEdit-CLI functionality.
 
 This module provides subtitle post-processing functionality that was previously
-handled by SubtitleEdit-CLI via Docker. It includes:
+using native Python implementations. It includes:
 
 - Fix common errors (overlapping times, short/long display times, etc.)
 - Remove hearing impaired text

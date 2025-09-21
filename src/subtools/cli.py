@@ -707,13 +707,8 @@ def handle_workflow_command(args: argparse.Namespace) -> int:  # pylint: disable
             postprocess_ops.append("/ocrfix")
 
         if postprocess_ops:
-            env_check = validate_postprocess_environment()
-            if not env_check["docker_available"]:
-                logger.warning("Docker not available - post-processing will be skipped")
-                postprocess_ops = []
-            elif not env_check["subtitle_edit_image"]:
-                logger.warning("Subtitle Edit image not available - post-processing will be skipped")
-                postprocess_ops = []
+            # Post-processing is now handled natively, no environment validation needed
+            logger.debug("Using native post-processing implementation")
 
         workflow = SubtitleWorkflow(
             args.model,

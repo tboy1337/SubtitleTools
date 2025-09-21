@@ -1062,7 +1062,7 @@ class TestAdditionalCliCoverage:
         )
 
         mock_isdir.return_value = True
-        mock_validate.return_value = {"docker_available": True, "subtitle_edit_image": True}
+        mock_validate.return_value = {"postprocess_available": True}
 
         with patch('pathlib.Path.glob', return_value=[]):
             result = handle_workflow_command(args)
@@ -1072,8 +1072,8 @@ class TestAdditionalCliCoverage:
     @patch('subtitletools.cli.validate_postprocess_environment')
     @patch('subtitletools.cli.SubtitleWorkflow')
     @patch('os.path.isdir')
-    def test_workflow_docker_unavailable(self, mock_isdir: Mock, mock_workflow_class: Mock, mock_validate: Mock) -> None:
-        """Test workflow with Docker unavailable but post-processing requested."""
+    def test_workflow_postprocessing_always_available(self, mock_isdir: Mock, mock_workflow_class: Mock, mock_validate: Mock) -> None:
+        """Test workflow with post-processing (now always available with native implementation)."""
         args = argparse.Namespace(
             input="video.mp4",
             output="output.srt",
@@ -1085,7 +1085,7 @@ class TestAdditionalCliCoverage:
             api_key=None,
             both=True,
             max_segment_length=None,
-            fix_common_errors=True,  # This requires Docker
+            fix_common_errors=True,  # Now handled natively
             remove_hi=False,
             auto_split_long_lines=False,
             fix_punctuation=False,
@@ -1097,7 +1097,7 @@ class TestAdditionalCliCoverage:
         )
 
         mock_isdir.return_value = False
-        mock_validate.return_value = {"docker_available": False, "subtitle_edit_image": False}
+        mock_validate.return_value = {"postprocess_available": True}
 
         mock_workflow = Mock()
         mock_workflow.transcribe_and_translate.return_value = {

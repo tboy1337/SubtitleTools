@@ -244,10 +244,6 @@ transcription_cache/
 translation_cache/
 checkpoints/
 
-# Docker volumes and containers (for post-processing)
-.docker/
-docker-compose.override.yml
-
 # FFmpeg and media processing temporary files
 ffmpeg_*.log
 *.ffmpeg

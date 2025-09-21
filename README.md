@@ -1,6 +1,6 @@
 # SubtitleTools
 
-A unified tool for comprehensive subtitle processing workflows.
+A tool for subtitle processing workflows, including extraction, conversion and optimization.
 
 ## 🚀 Features
 
