@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from subtitletools.utils.postprocess import (
+from src.subtools.utils.postprocess import (
     apply_common_fixes,
     apply_ocr_fixes,
     apply_subtitle_edit_postprocess,

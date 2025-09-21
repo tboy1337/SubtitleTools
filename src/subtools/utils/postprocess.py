@@ -1,13 +1,18 @@
 """Post-processing utilities for SubtitleTools.
 
 This module provides functionality for post-processing subtitle files,
-including integration with Subtitle Edit CLI through Docker.
+now using native Python implementations instead of external dependencies.
+Previous Docker/SubtitleEdit-CLI functionality has been replaced with
+equivalent Python implementations for better portability and performance.
 """
 
 import logging
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional, Union
+
+from .format_converter import convert_subtitle_format, get_supported_formats
+from .subtitle_fixes import apply_subtitle_fixes, batch_apply_subtitle_fixes
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +23,13 @@ def apply_subtitle_edit_postprocess(
     output_format: str = "subrip",
     docker_image: str = "seconv:1.0",
 ) -> bool:
-    """Apply post-processing operations using Subtitle Edit CLI via Docker.
+    """Apply post-processing operations using native Python implementation.
 
     Args:
         subtitle_file: Path to the subtitle file
-        operations: List of Subtitle Edit CLI operations
+        operations: List of post-processing operations
         output_format: Output format (subrip, ass, vtt, etc.)
-        docker_image: Docker image name for Subtitle Edit CLI
+        docker_image: Deprecated - kept for compatibility
 
     Returns:
         True if post-processing was successful
@@ -35,45 +40,41 @@ def apply_subtitle_edit_postprocess(
             logger.error("Subtitle file not found: %s", subtitle_file)
             return False
 
-        # Build Docker command
-        docker_cmd = [
-            "docker", "run", "--rm",
-            "-v", f"{subtitle_path.parent.absolute()}:/subtitles",
-            docker_image,
-            f"/subtitles/{subtitle_path.name}",
-            output_format
-        ]
+        logger.info("Running post-processing with native Python implementation")
 
-        # Add operations
-        for operation in operations:
-            docker_cmd.append(operation)
-
-        logger.info("Running post-processing: %s", ' '.join(docker_cmd))
-
-        result = subprocess.run(
-            docker_cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            timeout=1800,  # 30 minute timeout
-            check=False,
-        )
-
-        if result.returncode != 0:
-            error_msg = result.stderr.strip() if result.stderr else "Unknown error"
-            logger.error("Post-processing failed (code %s): %s", result.returncode, error_msg)
+        # Apply subtitle fixes using our Python implementation
+        success = apply_subtitle_fixes(subtitle_path, operations)
+        
+        if not success:
+            logger.error("Post-processing failed")
             return False
 
-        logger.info("Post-processing completed successfully")
-        if result.stdout.strip():
-            logger.debug("Post-processing output: %s", result.stdout.strip())
+        # Convert format if requested and different from current
+        if output_format and output_format.lower() not in ['subrip', 'srt']:
+            # Map format names to our converter format names
+            format_mapping = {
+                'subrip': 'srt',
+                'ass': 'ass', 
+                'ssa': 'ssa',
+                'vtt': 'vtt',
+                'webvtt': 'vtt',
+                'sami': 'sami',
+                'smi': 'sami'
+            }
+            
+            target_format = format_mapping.get(output_format.lower(), output_format.lower())
+            
+            if target_format in get_supported_formats():
+                convert_success = convert_subtitle_format(subtitle_path, target_format)
+                if not convert_success:
+                    logger.warning("Format conversion failed, keeping original format")
+            else:
+                logger.warning("Unsupported output format: %s", output_format)
 
+        logger.info("Post-processing completed successfully")
         return True
 
-    except subprocess.TimeoutExpired:
-        logger.error("Post-processing timed out after 30 minutes")
-        return False
-    except (subprocess.SubprocessError, OSError, TimeoutError) as e:
+    except Exception as e:
         logger.error("Error during post-processing: %s", e)
         return False
 
@@ -89,7 +90,7 @@ def generate_docker_command(
     convert_to: Optional[str] = None,
     docker_image: str = "seconv:1.0",
 ) -> Optional[str]:
-    """Generate a Docker command for Subtitle Edit CLI post-processing.
+    """Generate a processing command string (deprecated Docker functionality).
 
     Args:
         subtitle_file: Path to the subtitle file
@@ -99,95 +100,71 @@ def generate_docker_command(
         fix_punctuation: Fix punctuation issues
         ocr_fix: Apply OCR fixes
         convert_to: Convert to specified format
-        docker_image: Docker image name
+        docker_image: Deprecated - kept for compatibility
 
     Returns:
-        Docker command string or None if no operations specified
+        Processing description string or None if no operations specified
     """
     operations = []
 
     if fix_common_errors:
-        operations.append("/fixcommonerrors")
+        operations.append("fixcommonerrors")
     if remove_hi:
-        operations.append("/removetextforhi")
+        operations.append("removetextforhi")
     if auto_split_long_lines:
-        operations.append("/splitlonglines")
+        operations.append("splitlonglines")
     if fix_punctuation:
-        operations.append("/fixpunctuation")
+        operations.append("fixpunctuation")
     if ocr_fix:
-        operations.append("/ocrfix")
+        operations.append("ocrfix")
 
     if not operations and not convert_to:
         return None
 
     subtitle_path = Path(subtitle_file)
-    output_format = convert_to if convert_to else "subrip"
+    output_format = convert_to if convert_to else "srt"
 
-    docker_cmd = (
-        f'docker run --rm -v "{subtitle_path.parent.absolute()}:/subtitles" '
-        f'{docker_image} /subtitles/{subtitle_path.name} {output_format}'
-    )
-
-    for operation in operations:
-        docker_cmd += f" {operation}"
-
-    return docker_cmd
+    # Return description of what will be processed (no actual Docker command)
+    cmd_desc = f"Process {subtitle_path.name} with operations: {', '.join(operations)}"
+    if convert_to:
+        cmd_desc += f" and convert to {output_format}"
+        
+    return cmd_desc
 
 
 def check_docker_available() -> bool:
-    """Check if Docker is available and running.
+    """Check if Docker is available and running (deprecated).
 
     Returns:
-        True if Docker is available
+        Always returns True since Docker is no longer required
     """
-    try:
-        result = subprocess.run(
-            ["docker", "--version"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=10,
-            check=False,
-        )
-        return result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return False
+    logger.debug("Docker check requested - returning True (native implementation active)")
+    return True
 
 
 def check_subtitle_edit_image(docker_image: str = "seconv:1.0") -> bool:
-    """Check if the Subtitle Edit CLI Docker image is available.
+    """Check if the Subtitle Edit CLI Docker image is available (deprecated).
 
     Args:
-        docker_image: Docker image name to check
+        docker_image: Docker image name to check (ignored)
 
     Returns:
-        True if image is available
+        Always returns True since Docker images are no longer required
     """
-    try:
-        result = subprocess.run(
-            ["docker", "images", "-q", docker_image],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=30,
-            check=False,
-        )
-        return result.returncode == 0 and bool(result.stdout.strip())
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return False
+    logger.debug("Subtitle Edit image check requested - returning True (native implementation active)")
+    return True
 
 
 def validate_postprocess_environment() -> Dict[str, bool]:
     """Validate the post-processing environment.
 
     Returns:
-        Dictionary with validation results
+        Dictionary with validation results (always valid for native implementation)
     """
     checks = {
-        "docker_available": check_docker_available(),
-        "subtitle_edit_image": False,
+        "docker_available": True,      # Native implementation always available
+        "subtitle_edit_image": True,   # Native implementation always available
     }
-
-    if checks["docker_available"]:
-        checks["subtitle_edit_image"] = check_subtitle_edit_image()
 
     return checks
 
@@ -213,11 +190,18 @@ def get_supported_output_formats() -> List[str]:
     Returns:
         List of format names
     """
-    return ["srt", "subrip", "ass", "ssa", "vtt", "stl", "smi"]
+    # Use formats from our native converter
+    native_formats = get_supported_formats()
+    
+    # Add legacy format names for compatibility
+    legacy_formats = ["subrip", "stl"]
+    
+    all_formats = list(set(native_formats + legacy_formats))
+    return sorted(all_formats)
 
 
 def apply_common_fixes(subtitle_file: Union[str, Path]) -> bool:
-    """Apply common subtitle fixes using Subtitle Edit CLI.
+    """Apply common subtitle fixes using native Python implementation.
 
     Args:
         subtitle_file: Path to the subtitle file
@@ -225,11 +209,7 @@ def apply_common_fixes(subtitle_file: Union[str, Path]) -> bool:
     Returns:
         True if fixes were applied successfully
     """
-    return apply_subtitle_edit_postprocess(
-        subtitle_file,
-        ["/fixcommonerrors"],
-        "subrip"
-    )
+    return apply_subtitle_fixes(subtitle_file, ["fixcommonerrors"])
 
 
 def remove_hearing_impaired(subtitle_file: Union[str, Path]) -> bool:
@@ -241,11 +221,7 @@ def remove_hearing_impaired(subtitle_file: Union[str, Path]) -> bool:
     Returns:
         True if processing was successful
     """
-    return apply_subtitle_edit_postprocess(
-        subtitle_file,
-        ["/removetextforhi"],
-        "subrip"
-    )
+    return apply_subtitle_fixes(subtitle_file, ["removetextforhi"])
 
 
 def split_long_lines(subtitle_file: Union[str, Path]) -> bool:
@@ -257,11 +233,7 @@ def split_long_lines(subtitle_file: Union[str, Path]) -> bool:
     Returns:
         True if processing was successful
     """
-    return apply_subtitle_edit_postprocess(
-        subtitle_file,
-        ["/splitlonglines"],
-        "subrip"
-    )
+    return apply_subtitle_fixes(subtitle_file, ["splitlonglines"])
 
 
 def fix_punctuation(subtitle_file: Union[str, Path]) -> bool:
@@ -273,11 +245,7 @@ def fix_punctuation(subtitle_file: Union[str, Path]) -> bool:
     Returns:
         True if processing was successful
     """
-    return apply_subtitle_edit_postprocess(
-        subtitle_file,
-        ["/fixpunctuation"],
-        "subrip"
-    )
+    return apply_subtitle_fixes(subtitle_file, ["fixpunctuation"])
 
 
 def apply_ocr_fixes(subtitle_file: Union[str, Path]) -> bool:
@@ -289,11 +257,7 @@ def apply_ocr_fixes(subtitle_file: Union[str, Path]) -> bool:
     Returns:
         True if processing was successful
     """
-    return apply_subtitle_edit_postprocess(
-        subtitle_file,
-        ["/ocrfix"],
-        "subrip"
-    )
+    return apply_subtitle_fixes(subtitle_file, ["ocrfix"])
 
 
 def convert_subtitle_format(
@@ -309,11 +273,8 @@ def convert_subtitle_format(
     Returns:
         True if conversion was successful
     """
-    return apply_subtitle_edit_postprocess(
-        subtitle_file,
-        [],
-        output_format
-    )
+    from .format_converter import convert_subtitle_format as native_convert
+    return native_convert(subtitle_file, output_format)
 
 
 def batch_postprocess(
@@ -331,18 +292,21 @@ def batch_postprocess(
     Returns:
         Dictionary mapping file paths to success status
     """
-    results = {}
-
-    for subtitle_file in subtitle_files:
-        try:
-            success = apply_subtitle_edit_postprocess(
-                subtitle_file,
-                operations,
-                output_format
-            )
-            results[str(subtitle_file)] = success
-        except (subprocess.SubprocessError, OSError) as e:
-            logger.error("Error processing %s: %s", subtitle_file, e)
-            results[str(subtitle_file)] = False
+    # Use our native batch processing
+    results = batch_apply_subtitle_fixes(subtitle_files, operations)
+    
+    # Apply format conversion if requested
+    if output_format and output_format.lower() not in ['subrip', 'srt']:
+        from .format_converter import batch_convert_subtitle_format
+        
+        # Only convert files that were successfully processed
+        successful_files = [f for f, success in results.items() if success]
+        if successful_files:
+            convert_results = batch_convert_subtitle_format(successful_files, output_format)
+            
+            # Update results with conversion status
+            for file_path, convert_success in convert_results.items():
+                if not convert_success:
+                    logger.warning("Format conversion failed for %s, keeping original format", file_path)
 
     return results

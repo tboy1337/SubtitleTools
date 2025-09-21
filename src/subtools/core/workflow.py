@@ -27,7 +27,6 @@ from ..utils.common import (
 )
 from ..utils.postprocess import (
     apply_subtitle_edit_postprocess,
-    check_docker_available,
     validate_postprocess_environment,
 )
 from .subtitle import SubtitleProcessor, SubtitleError
@@ -368,14 +367,16 @@ class SubtitleWorkflow:
     ) -> bool:
         """Apply post-processing operations to subtitles."""
         try:
-            # Check if post-processing environment is available
+            # Check if post-processing environment is available  
             env_check = validate_postprocess_environment()
-            if not env_check["docker_available"]:
-                logger.warning("Docker not available, skipping post-processing")
-                return False
-            if not env_check["subtitle_edit_image"]:
-                logger.warning("Subtitle Edit image not available, skipping post-processing")
-                return False
+            # Environment check is now always valid with native implementation
+            if not env_check["docker_available"]:  # Always True now
+                logger.debug("Post-processing environment validated")
+                pass
+            # Subtitle Edit image check is no longer needed with native implementation
+            if not env_check["subtitle_edit_image"]:  # Always True now
+                logger.debug("Subtitle processing available via native implementation")
+                pass
 
             # Apply operations
             success = apply_subtitle_edit_postprocess(
@@ -533,5 +534,5 @@ class SubtitleWorkflow:
         return {
             "transcriber": self.transcriber.get_model_info(),
             "translator": self.translator.get_service_info(),
-            "postprocess_available": check_docker_available(),
+            "postprocess_available": True,  # Always available with native implementation
         }

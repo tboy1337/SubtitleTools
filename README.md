@@ -28,11 +28,12 @@ SubtitleTools provides a complete subtitle processing pipeline:
 - **Auto-Detection**: Automatic source encoding detection
 
 ### ⚙️ Post-Processing
-- **Subtitle Edit Integration**: Post-process subtitles using Subtitle Edit CLI via Docker
+- **Native Processing**: Built-in subtitle post-processing without external dependencies
 - **Common Fixes**: Apply common subtitle error corrections
 - **Format Conversion**: Convert between SRT, ASS, VTT, and other formats
 - **Line Splitting**: Automatically split long subtitle lines
 - **OCR Fixes**: Correct common OCR errors
+- **Hearing Impaired Removal**: Remove hearing impaired text markers
 
 ### 🔄 Workflows
 - **End-to-End Processing**: Video → Subtitles → Translation → Post-processing
@@ -46,7 +47,6 @@ SubtitleTools provides a complete subtitle processing pipeline:
 
 1. **Python 3.8+**
 2. **FFmpeg** (for video/audio processing)
-3. **Docker** (optional, for post-processing features)
 
 ### Installing FFmpeg
 
@@ -141,9 +141,7 @@ python run.py workflow video.mp4 --target-lang fr --fix-common-errors --remove-h
 
 ## Subtitle Post-Processing
 
-SubtitleTools can automatically improve generated subtitles using preset options.
-
-> **⚠️ IMPORTANT:** All subtitle post-processing features below require Docker and the Subtitle Edit CLI image. See the "Advanced Usage with Subtitle Edit" section below for setup instructions **before** using these options.
+SubtitleTools includes built-in subtitle post-processing functionality with no external dependencies required.
 
 ```bash
 # Fix common errors
@@ -156,45 +154,15 @@ python run.py workflow video.mp4 --remove-hi
 python run.py workflow video.mp4 --fix-common-errors --remove-hi --auto-split-long-lines
 ```
 
-Available presets (all require Docker + Subtitle Edit CLI):
-- `--fix-common-errors`: Fix common subtitle issues
-- `--remove-hi`: Remove hearing impaired text
-- `--auto-split-long-lines`: Split long subtitle lines
-- `--fix-punctuation`: Fix punctuation issues
-- `--ocr-fix`: Apply OCR fixes
-- `--convert-to`: Convert format (srt, ass, stl, smi, vtt)
+Available post-processing options:
+- `--fix-common-errors`: Fix common subtitle issues (overlapping times, short/long display times, spacing, etc.)
+- `--remove-hi`: Remove hearing impaired text (content in brackets, parentheses, speaker names, etc.)
+- `--auto-split-long-lines`: Split long subtitle lines intelligently
+- `--fix-punctuation`: Fix punctuation issues (ellipsis, quotation marks, multiple punctuation, etc.)
+- `--ocr-fix`: Apply OCR error corrections (common character misrecognitions)
+- `--convert-to`: Convert format (srt, ass, ssa, vtt, sami)
 
-## Advanced Usage with Subtitle Edit
-
-### Docker Setup (Required for Post-Processing)
-
-All subtitle post-processing options require Docker and the Subtitle Edit CLI image:
-
-1. Install Docker from [docker.com](https://www.docker.com/products/docker-desktop/)
-
-2. Build the Subtitle Edit CLI Docker image:
-   ```bash
-   git clone https://github.com/SubtitleEdit/subtitleedit-cli.git
-   cd subtitleedit-cli
-   docker build -t seconv:1.0 -f docker/Dockerfile .
-   ```
-
-3. Verify the image is built correctly:
-   ```bash
-   docker images | grep seconv
-   ```
-
-Once the Docker image is built, you can use SubtitleTools' post-processing features.
-
-### Custom Post-Processing Commands
-
-The built-in flags (like `--fix-common-errors`) are convenience wrappers that automatically generate and execute Docker commands. Behind the scenes, these flags create commands like:
-
-```bash
-docker run --rm -v "/path/to/subtitles:/subtitles" seconv:1.0 /subtitles/your_file.srt subrip /fixcommonerrors
-```
-
-If you need to run custom Subtitle Edit CLI commands, you can execute Docker commands directly outside of SubtitleTools, but the built-in flags should cover most common use cases.
+All post-processing is performed using native Python implementations for maximum compatibility and performance.
 
 ## 🛠️ Command Reference
 
@@ -296,8 +264,8 @@ mypy src/
 - Process during off-peak hours
 
 ### Post-Processing  
-- Ensure Docker is properly configured
-- Build Subtitle Edit CLI image beforehand
+- No external dependencies required
+- Native Python implementation for fast processing
 - Use batch processing for multiple files
 
 ## ⚠️ Requirements
@@ -311,7 +279,6 @@ mypy src/
 - requests (API communication)
 
 ### Optional Dependencies
-- docker (post-processing)
 - jieba (Chinese text segmentation)
 
 ## 📄 License

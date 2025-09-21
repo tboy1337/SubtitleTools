@@ -71,7 +71,6 @@ gpu = [
 ]
 postprocess = [
     # Optional dependencies for post-processing
-    "docker",
 ]
 
 [project.urls]
