@@ -387,9 +387,8 @@ class SubtitleWorkflow:
                 logger.warning("Post-processing failed")
 
             return success
-
-        except (RuntimeError, subprocess.CalledProcessError, OSError) as e:
-            logger.error("Post-processing error: %s", e)
+        except Exception as e:
+            logger.error("Post-processing failed with error: %s", e)
             return False
 
     def translate_existing_subtitles(
@@ -507,13 +506,20 @@ class SubtitleWorkflow:
                         **workflow_options
                     )
 
-                    results[str(input_path)] = result
+                results[str(input_path)] = result
                 successful += 1
 
             except (WorkflowError, TranscriptionError, TranslationError) as e:
                 logger.error("Failed to process %s: %s", input_path, e)
                 results[str(input_path)] = {
                     "status": "failed",
+                    "error": str(e),
+                    "input_path": str(input_path),
+                }
+            except Exception as e:
+                logger.error("Unexpected error processing %s: %s", input_path, e)
+                results[str(input_path)] = {
+                    "status": "failed", 
                     "error": str(e),
                     "input_path": str(input_path),
                 }
@@ -527,8 +533,14 @@ class SubtitleWorkflow:
         Returns:
             Dictionary with workflow information
         """
+        try:
+            env_check = validate_postprocess_environment()
+            postprocess_available = env_check.get("postprocess_available", False)
+        except Exception:
+            postprocess_available = False
+            
         return {
             "transcriber": self.transcriber.get_model_info(),
             "translator": self.translator.get_service_info(),
-            "postprocess_available": True,  # Always available with native implementation
+            "postprocess_available": postprocess_available,
         }

@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 import srt
 
-from src.subtools.utils.subtitle_fixes import (
+from src.subtitletools.utils.subtitle_fixes import (
     SubtitleFixer,
     apply_subtitle_fixes,
     batch_apply_subtitle_fixes,
@@ -208,7 +208,7 @@ class TestApplySubtitleFixes:
         
     def test_unknown_operation(self, temp_subtitle_file):
         """Test handling unknown operation."""
-        with patch('src.subtools.utils.subtitle_fixes.logger') as mock_logger:
+        with patch('src.subtitletools.utils.subtitle_fixes.logger') as mock_logger:
             success = apply_subtitle_fixes(temp_subtitle_file, ["unknown_operation"])
             
         # Should still succeed (just skip unknown operation)

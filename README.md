@@ -216,9 +216,9 @@ SubtitleTools supports 100+ languages for transcription and 50+ for translation,
 ## 🔧 Configuration
 
 ### Environment Variables
-- `SUBTOOLS_API_KEY` - Default translation API key
-- `SUBTOOLS_LOG_LEVEL` - Logging level (DEBUG, INFO, WARNING, ERROR)
-- `SUBTOOLS_TEMP_DIR` - Custom temporary directory
+- `SUBTITLETOOLS_API_KEY` - Default translation API key
+- `SUBTITLETOOLS_LOG_LEVEL` - Logging level (DEBUG, INFO, WARNING, ERROR)
+- `SUBTITLETOOLS_TEMP_DIR` - Custom temporary directory
 
 ### Configuration Files
 - `~/.subtitletools/config.yaml` - User configuration

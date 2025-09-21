@@ -108,7 +108,7 @@ def mock_env_clean() -> Generator[None, None, None]:
     original_env = os.environ.copy()
     # Remove SubtitleTools-related environment variables
     for key in list(os.environ.keys()):
-        if key.startswith("SUBTOOLS_"):
+        if key.startswith("SUBTITLETOOLS_"):
             del os.environ[key]
     yield
     # Restore original environment

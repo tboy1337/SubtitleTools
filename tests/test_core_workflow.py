@@ -949,7 +949,9 @@ class TestWorkflowMissingCoverage:
         with patch('subtitletools.core.workflow.SubWhisperTranscriber') as mock_transcriber_class:
             with patch('subtitletools.core.workflow.SubtitleTranslator') as mock_translator_class:
                 with patch('subtitletools.core.workflow.SubtitleProcessor'):
-                    # Native processing is always available
+                    with patch('subtitletools.core.workflow.validate_postprocess_environment') as mock_validate:
+                        # Mock native processing only (no external postprocessing tools)
+                        mock_validate.return_value = {"postprocess_available": False}
 
                         # Mock instances
                         mock_transcriber = Mock()

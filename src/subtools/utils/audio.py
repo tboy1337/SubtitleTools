@@ -82,6 +82,8 @@ def find_ffmpeg() -> Optional[str]:
         logger.warning("Timeout expired while searching for FFmpeg in PATH")
     except (subprocess.SubprocessError, OSError) as e:
         logger.warning("Error while searching for FFmpeg in PATH: %s", e)
+    except Exception as e:
+        logger.warning("Unexpected error while searching for FFmpeg in PATH: %s", e)
 
     # Check common locations
     logger.debug("Checking common FFmpeg installation locations...")
@@ -104,6 +106,8 @@ def find_ffmpeg() -> Optional[str]:
             )
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Error checking FFmpeg location %s: %s", location, e)
+        except Exception as e:
+            logger.debug("Unexpected error checking FFmpeg location %s: %s", location, e)
 
     # If we get here, we couldn't find ffmpeg
     logger.error("FFmpeg executable not found in any known locations")
@@ -259,6 +263,8 @@ def cleanup_temp_dir() -> None:
             _TEMP_DIR = None
         except (OSError, IOError) as e:
             logger.error("Failed to clean up temporary directory %s: %s", _TEMP_DIR, e)
+        except Exception as e:
+            logger.error("Unexpected error cleaning up temporary directory %s: %s", _TEMP_DIR, e)
 
 
 def get_audio_duration(audio_path: Union[str, Path]) -> Optional[float]:
@@ -302,6 +308,8 @@ def get_audio_duration(audio_path: Union[str, Path]) -> Optional[float]:
 
     except (subprocess.SubprocessError, ValueError, OSError) as e:
         logger.warning("Error getting audio duration: %s", e)
+    except Exception as e:
+        logger.warning("Unexpected error getting audio duration: %s", e)
 
     return None
 
@@ -341,6 +349,8 @@ def find_ffprobe() -> Optional[str]:
             return result.stdout.strip().split("\n")[0]
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError):
         pass
+    except Exception:
+        pass
 
     # Check common locations
     for location in ffprobe_locations:
@@ -348,6 +358,8 @@ def find_ffprobe() -> Optional[str]:
             if os.path.isfile(location):
                 return location
         except (OSError, TypeError):
+            continue
+        except Exception:
             continue
 
     return None
@@ -382,4 +394,7 @@ def validate_audio_file(audio_path: Union[str, Path]) -> bool:
 
     except (subprocess.SubprocessError, OSError) as e:
         logger.debug("Audio file validation failed for %s: %s", audio_path, e)
+        return False
+    except Exception as e:
+        logger.debug("Unexpected error validating audio file %s: %s", audio_path, e)
         return False

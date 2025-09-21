@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import srt
 
-from src.subtools.utils.format_converter import (
+from src.subtitletools.utils.format_converter import (
     FormatConverter,
     convert_subtitle_format,
     batch_convert_subtitle_format,
