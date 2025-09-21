@@ -8,7 +8,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union, cast, TypedDict
+from typing import Any, Callable, Dict, List, Optional, TypedDict, Union, cast
 
 from ..config.settings import (
     DEFAULT_ENCODING,
@@ -28,7 +28,7 @@ from ..utils.postprocess import (
     apply_subtitle_edit_postprocess,
     validate_postprocess_environment,
 )
-from .subtitle import SubtitleProcessor, SubtitleError
+from .subtitle import SubtitleError, SubtitleProcessor
 from .transcription import SubWhisperTranscriber, TranscriptionError
 from .translation import SubtitleTranslator, TranslationError, is_space_language
 
@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 class CheckpointData(TypedDict):
     """Type definition for checkpoint data."""
+
     workflow_id: str
     timestamp: float
     data: Dict[str, Union[str, float, int, bool, List[str]]]
@@ -44,6 +45,7 @@ class CheckpointData(TypedDict):
 
 class WorkflowResults(TypedDict, total=False):
     """Type definition for workflow results."""
+
     status: str
     output_path: str
     input_path: str
@@ -75,7 +77,9 @@ class CheckpointManager:
         ensure_directory(self.checkpoint_dir)
         self.checkpoint_file = self.checkpoint_dir / f"{workflow_id}.json"
 
-    def save_checkpoint(self, data: Dict[str, Union[str, float, int, bool, List[str]]]) -> None:
+    def save_checkpoint(
+        self, data: Dict[str, Union[str, float, int, bool, List[str]]]
+    ) -> None:
         """Save workflow checkpoint."""
         try:
             checkpoint_data: CheckpointData = {
@@ -92,7 +96,9 @@ class CheckpointManager:
         except (OSError, IOError, ValueError) as e:
             logger.warning("Failed to save checkpoint: %s", e)
 
-    def load_checkpoint(self) -> Optional[Dict[str, Union[str, float, int, bool, List[str]]]]:
+    def load_checkpoint(
+        self,
+    ) -> Optional[Dict[str, Union[str, float, int, bool, List[str]]]]:
         """Load workflow checkpoint."""
         try:
             if not self.checkpoint_file.exists():
@@ -102,7 +108,10 @@ class CheckpointManager:
                 checkpoint_data = cast(Dict[str, Any], json.load(f))
 
             logger.debug("Loaded checkpoint: %s", self.checkpoint_file)
-            return cast(Optional[Dict[str, Union[str, float, int, bool, List[str]]]], checkpoint_data.get("data"))
+            return cast(
+                Optional[Dict[str, Union[str, float, int, bool, List[str]]]],
+                checkpoint_data.get("data"),
+            )
 
         except (OSError, IOError, ValueError, KeyError) as e:
             logger.warning("Failed to load checkpoint: %s", e)
@@ -138,7 +147,11 @@ class SubtitleWorkflow:
         self.translator = SubtitleTranslator(translation_service, api_key)
         self.subtitle_processor = SubtitleProcessor()
 
-        logger.info("Initialized workflow with model: %s, service: %s", whisper_model, translation_service)
+        logger.info(
+            "Initialized workflow with model: %s, service: %s",
+            whisper_model,
+            translation_service,
+        )
 
     def transcribe_and_translate(
         self,
@@ -190,7 +203,10 @@ class SubtitleWorkflow:
         if resume:
             checkpoint_data = checkpoint_manager.load_checkpoint()
             if checkpoint_data:
-                logger.info("Resuming workflow from checkpoint: %s", checkpoint_data.get('step', 'unknown'))
+                logger.info(
+                    "Resuming workflow from checkpoint: %s",
+                    checkpoint_data.get("step", "unknown"),
+                )
 
         try:
             results: WorkflowResults = {
@@ -239,7 +255,9 @@ class SubtitleWorkflow:
                         **transcribe_kwargs,
                     )
                     temp_srt_path = input_path_obj.with_suffix("_temp.srt")
-                    self.transcriber.generate_srt(transcription_result["segments"], temp_srt_path)
+                    self.transcriber.generate_srt(
+                        transcription_result["segments"], temp_srt_path
+                    )
                 else:
                     raise WorkflowError(f"Unsupported file type: {input_path_obj}")
 
@@ -248,18 +266,23 @@ class SubtitleWorkflow:
                 results["steps_completed"].append("transcription")
 
                 # Save checkpoint
-                checkpoint_manager.save_checkpoint({
-                    "step": "translation",
-                    "temp_srt_path": str(temp_srt_path),
-                    "results": results,  # type: ignore[dict-item]
-                })
+                checkpoint_manager.save_checkpoint(
+                    {
+                        "step": "translation",
+                        "temp_srt_path": str(temp_srt_path),
+                        "results": results,  # type: ignore[dict-item]
+                    }
+                )
 
                 logger.info("Transcription completed in %.2f seconds", step_time)
 
             else:
                 # Resume from checkpoint
                 temp_srt_path = Path(str(checkpoint_data["temp_srt_path"]))
-                checkpoint_results = cast(Dict[str, Union[str, float, int, bool, List[str]]], checkpoint_data["results"])
+                checkpoint_results = cast(
+                    Dict[str, Union[str, float, int, bool, List[str]]],
+                    checkpoint_data["results"],
+                )
                 # Update results with checkpoint data
                 for key, value in checkpoint_results.items():
                     if key in results:
@@ -267,7 +290,10 @@ class SubtitleWorkflow:
                 logger.info("Resumed: Transcription already completed")
 
             # Step 2: Translation
-            if not checkpoint_data or checkpoint_data.get("step") in ["transcription", "translation"]:
+            if not checkpoint_data or checkpoint_data.get("step") in [
+                "transcription",
+                "translation",
+            ]:
                 if progress_callback:
                     progress_callback("Translating subtitles...", 0.5)
 
@@ -278,7 +304,11 @@ class SubtitleWorkflow:
                 original_subtitles = self.subtitle_processor.parse_file(temp_srt_path)
 
                 # Determine if target language uses spaces
-                space = is_space_language(target_lang) if target_lang != src_lang else bool(kwargs.get("space", False))
+                space = (
+                    is_space_language(target_lang)
+                    if target_lang != src_lang
+                    else bool(kwargs.get("space", False))
+                )
 
                 # Translate subtitles
                 translated_subtitles = self._translate_subtitles(
@@ -287,7 +317,13 @@ class SubtitleWorkflow:
                     target_lang,
                     space=space,
                     both=both,
-                    progress_callback=lambda current, total, msg: progress_callback(f"Translating: {msg}", 0.5 + 0.3 * (current / total)) if progress_callback else None,
+                    progress_callback=lambda current, total, msg: (
+                        progress_callback(
+                            f"Translating: {msg}", 0.5 + 0.3 * (current / total)
+                        )
+                        if progress_callback
+                        else None
+                    ),
                 )
 
                 # Save translated subtitles
@@ -299,10 +335,12 @@ class SubtitleWorkflow:
                 results["translated_segments"] = len(translated_subtitles)
 
                 # Save checkpoint
-                checkpoint_manager.save_checkpoint({
-                    "step": "postprocessing", 
-                    "results": results,  # type: ignore[dict-item]
-                })
+                checkpoint_manager.save_checkpoint(
+                    {
+                        "step": "postprocessing",
+                        "results": results,  # type: ignore[dict-item]
+                    }
+                )
 
                 logger.info("Translation completed in %.2f seconds", step_time)
 
@@ -314,7 +352,9 @@ class SubtitleWorkflow:
                 logger.info("Step 3: Post-processing subtitles")
                 step_start = time.time()
 
-                success = self._apply_postprocessing(output_path, postprocess_operations)
+                success = self._apply_postprocessing(
+                    output_path, postprocess_operations
+                )
 
                 step_time = time.time() - step_start
                 results["postprocessing_time"] = step_time
@@ -335,7 +375,7 @@ class SubtitleWorkflow:
             checkpoint_manager.clear_checkpoint()
 
             # Clean up temporary files
-            if 'temp_srt_path' in locals() and Path(temp_srt_path).exists():
+            if "temp_srt_path" in locals() and Path(temp_srt_path).exists():
                 try:
                     Path(temp_srt_path).unlink()
                     logger.debug("Cleaned up temporary file: %s", temp_srt_path)
@@ -345,7 +385,12 @@ class SubtitleWorkflow:
             logger.info("Workflow completed successfully in %.2f seconds", total_time)
             return results
 
-        except (WorkflowError, TranscriptionError, TranslationError, SubtitleError) as e:
+        except (
+            WorkflowError,
+            TranscriptionError,
+            TranslationError,
+            SubtitleError,
+        ) as e:
             # Save error checkpoint
             error_data: Dict[str, Union[str, float, int, bool, List[str]]] = {
                 "step": "error",
@@ -367,7 +412,9 @@ class SubtitleWorkflow:
     ) -> List["srt.Subtitle"]:  # type: ignore[name-defined]
         """Translate subtitles using the translation service."""
         if src_lang == target_lang:
-            logger.info("Source and target languages are the same, skipping translation")
+            logger.info(
+                "Source and target languages are the same, skipping translation"
+            )
             return subtitles
 
         try:
@@ -410,9 +457,7 @@ class SubtitleWorkflow:
 
             # Apply operations
             success = apply_subtitle_edit_postprocess(
-                subtitle_path,
-                operations,
-                "subrip"
+                subtitle_path, operations, "subrip"
             )
 
             if success:
@@ -454,7 +499,9 @@ class SubtitleWorkflow:
         output_path_obj = Path(output_path)
 
         try:
-            logger.info("Translating subtitles: %s -> %s", input_path_obj, output_path_obj)
+            logger.info(
+                "Translating subtitles: %s -> %s", input_path_obj, output_path_obj
+            )
             start_time = time.time()
 
             # Parse input subtitles
@@ -474,7 +521,9 @@ class SubtitleWorkflow:
             )
 
             # Save translated subtitles
-            self.subtitle_processor.save_file(translated_subtitles, output_path_obj, encoding)
+            self.subtitle_processor.save_file(
+                translated_subtitles, output_path_obj, encoding
+            )
 
             total_time = time.time() - start_time
 
@@ -538,14 +587,12 @@ class SubtitleWorkflow:
                         input_path,
                         output_path,
                         postprocess_operations=postprocess_operations,
-                        **cast(Any, workflow_options)
+                        **cast(Any, workflow_options),
                     )
                 else:
                     # Translation-only workflow
                     result = self.translate_existing_subtitles(
-                        input_path,
-                        output_path,
-                        **cast(Any, workflow_options)
+                        input_path, output_path, **cast(Any, workflow_options)
                     )
 
                 results[str(input_path)] = result
@@ -554,7 +601,7 @@ class SubtitleWorkflow:
             except (WorkflowError, TranscriptionError, TranslationError) as e:
                 logger.error("Failed to process %s: %s", input_path, e)
                 error_result: WorkflowResults = {
-                    "status": "failed", 
+                    "status": "failed",
                     "input_path": str(input_path),
                     "output_path": "",
                     "total_time": 0.0,
@@ -584,7 +631,9 @@ class SubtitleWorkflow:
                 }
                 results[str(input_path)] = unexpected_error_result
 
-        logger.info("Batch processing completed: %d/%d successful", successful, len(input_paths))
+        logger.info(
+            "Batch processing completed: %d/%d successful", successful, len(input_paths)
+        )
         return results
 
     def get_workflow_info(self) -> Dict[str, Any]:

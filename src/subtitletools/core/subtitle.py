@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Protocol, Union, cast
 import srt
 
 from ..config.settings import DEFAULT_ENCODING
-from ..utils.common import validate_file_exists, ensure_directory
+from ..utils.common import ensure_directory, validate_file_exists
 from ..utils.encoding import detect_encoding
 
 logger = logging.getLogger(__name__)
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 # Try importing jieba for Chinese segmentation
 try:
     import jieba
+
     JIEBA_AVAILABLE = True
     logger.debug("Jieba library available for Chinese segmentation")
 except ImportError:
@@ -30,6 +31,7 @@ except ImportError:
 
 class SubtitleLike(Protocol):
     """Protocol for subtitle objects with required attributes."""
+
     index: int
     start: timedelta
     end: timedelta
@@ -81,9 +83,7 @@ class SubtitleProcessor:
         logger.debug("Initialized SubtitleProcessor")
 
     def parse_file(
-        self,
-        file_path: Union[str, Path],
-        encoding: str = DEFAULT_ENCODING
+        self, file_path: Union[str, Path], encoding: str = DEFAULT_ENCODING
     ) -> SubtitleList:
         """Parse an SRT file into subtitle objects.
 
@@ -126,7 +126,9 @@ class SubtitleProcessor:
             ) from e
         except Exception as e:
             # Handle both SRT parse errors and other exceptions
-            raise SubtitleError(f"Error parsing subtitle file {file_path_obj}: {e}") from e
+            raise SubtitleError(
+                f"Error parsing subtitle file {file_path_obj}: {e}"
+            ) from e
 
     def save_file(
         self,
@@ -159,7 +161,9 @@ class SubtitleProcessor:
             logger.info("Saved %d subtitles to %s", len(subtitles), file_path_obj)
 
         except Exception as e:
-            raise SubtitleError(f"Error saving subtitle file {file_path_obj}: {e}") from e
+            raise SubtitleError(
+                f"Error saving subtitle file {file_path_obj}: {e}"
+            ) from e
 
     def extract_text(self, subtitles: SubtitleList) -> List[str]:
         """Extract text content from subtitle objects.
@@ -173,9 +177,7 @@ class SubtitleProcessor:
         return [sub.content for sub in subtitles]
 
     def split_sentences(
-        self,
-        subtitles: SubtitleList,
-        language_code: Optional[str] = None
+        self, subtitles: SubtitleList, language_code: Optional[str] = None
     ) -> List[str]:
         """Split subtitle content into sentences for better translation.
 
@@ -199,8 +201,12 @@ class SubtitleProcessor:
                 segments_generator = cast(Any, jieba.cut(all_text, cut_all=False))
                 sentences = cast(List[str], list(segments_generator))
                 # Filter meaningful segments
-                filtered_sentences = [s.strip() for s in sentences if s.strip() and len(s.strip()) > 1]
-                logger.debug("Chinese segmentation produced %d segments", len(filtered_sentences))
+                filtered_sentences = [
+                    s.strip() for s in sentences if s.strip() and len(s.strip()) > 1
+                ]
+                logger.debug(
+                    "Chinese segmentation produced %d segments", len(filtered_sentences)
+                )
                 return filtered_sentences
             except (ImportError, AttributeError, TypeError, Exception) as e:
                 logger.warning("Chinese segmentation failed, using fallback: %s", e)
@@ -236,7 +242,9 @@ class SubtitleProcessor:
             return original_subtitles
 
         # Join translated sentences
-        translated_text = " ".join(translated_sentences) if space else "".join(translated_sentences)
+        translated_text = (
+            " ".join(translated_sentences) if space else "".join(translated_sentences)
+        )
 
         # Split translated text back into subtitle segments
         reconstructed: List[SubtitleLike] = []
@@ -262,7 +270,9 @@ class SubtitleProcessor:
                 # Last subtitle gets remaining text
                 translated_segment = translated_text[current_pos:].strip()
             else:
-                translated_segment = translated_text[current_pos:current_pos + translated_length].strip()
+                translated_segment = translated_text[
+                    current_pos : current_pos + translated_length
+                ].strip()
                 current_pos += translated_length
 
             # Create new subtitle content
@@ -277,13 +287,16 @@ class SubtitleProcessor:
                 new_content = translated_segment or sub.content
 
             # Create new subtitle object
-            new_subtitle = cast(SubtitleLike, srt.Subtitle(
-                index=sub.index,
-                start=sub.start,
-                end=sub.end,
-                content=new_content,
-                proprietary=getattr(sub, 'proprietary', "")
-            ))
+            new_subtitle = cast(
+                SubtitleLike,
+                srt.Subtitle(
+                    index=sub.index,
+                    start=sub.start,
+                    end=sub.end,
+                    content=new_content,
+                    proprietary=getattr(sub, "proprietary", ""),
+                ),
+            )
 
             reconstructed.append(new_subtitle)
 
@@ -321,13 +334,16 @@ class SubtitleProcessor:
             # Use timing from first subtitle list
             merged_content = f"{sub1.content}{separator}{sub2.content}"
 
-            merged_subtitle = cast(SubtitleLike, cast(Any, srt.Subtitle)(
-                index=sub1.index,
-                start=sub1.start,
-                end=sub1.end,
-                content=merged_content,
-                proprietary=str(getattr(sub1, 'proprietary', ""))
-            ))
+            merged_subtitle = cast(
+                SubtitleLike,
+                cast(Any, srt.Subtitle)(
+                    index=sub1.index,
+                    start=sub1.start,
+                    end=sub1.end,
+                    content=merged_content,
+                    proprietary=str(getattr(sub1, "proprietary", "")),
+                ),
+            )
 
             merged.append(merged_subtitle)
 
@@ -338,16 +354,24 @@ class SubtitleProcessor:
             for i in range(min_length, len(subtitles2)):
                 sub2 = subtitles2[i]
                 # Adjust index to continue sequence
-                adjusted_subtitle = cast(SubtitleLike, cast(Any, srt.Subtitle)(
-                    index=len(merged) + 1,
-                    start=sub2.start,
-                    end=sub2.end,
-                    content=sub2.content,
-                    proprietary=str(getattr(sub2, 'proprietary', ""))
-                ))
+                adjusted_subtitle = cast(
+                    SubtitleLike,
+                    cast(Any, srt.Subtitle)(
+                        index=len(merged) + 1,
+                        start=sub2.start,
+                        end=sub2.end,
+                        content=sub2.content,
+                        proprietary=str(getattr(sub2, "proprietary", "")),
+                    ),
+                )
                 merged.append(adjusted_subtitle)
 
-        logger.info("Merged %d and %d subtitles into %d", len(subtitles1), len(subtitles2), len(merged))
+        logger.info(
+            "Merged %d and %d subtitles into %d",
+            len(subtitles1),
+            len(subtitles2),
+            len(merged),
+        )
         return merged
 
     def filter_subtitles(
@@ -451,13 +475,16 @@ class SubtitleProcessor:
             if new_end < new_start:
                 new_end = new_start + timedelta(milliseconds=100)
 
-            adjusted_subtitle = cast(SubtitleLike, cast(Any, srt.Subtitle)(
-                index=sub.index,
-                start=new_start,
-                end=new_end,
-                content=sub.content,
-                proprietary=str(getattr(sub, 'proprietary', ""))
-            ))
+            adjusted_subtitle = cast(
+                SubtitleLike,
+                cast(Any, srt.Subtitle)(
+                    index=sub.index,
+                    start=new_start,
+                    end=new_end,
+                    content=sub.content,
+                    proprietary=str(getattr(sub, "proprietary", "")),
+                ),
+            )
 
             adjusted.append(adjusted_subtitle)
 
@@ -524,7 +551,9 @@ class SubtitleProcessor:
         for i, sub in enumerate(subtitles):
             # Check index sequence
             if sub.index != i + 1:
-                issues.append(f"Subtitle {i + 1}: Index mismatch (expected {i + 1}, got {sub.index})")
+                issues.append(
+                    f"Subtitle {i + 1}: Index mismatch (expected {i + 1}, got {sub.index})"
+                )
 
             # Check timing
             if sub.start >= sub.end:
@@ -539,5 +568,7 @@ class SubtitleProcessor:
             if not sub.content.strip():
                 issues.append(f"Subtitle {i + 1}: Empty content")
 
-        logger.info("Validated %d subtitles, found %d issues", len(subtitles), len(issues))
+        logger.info(
+            "Validated %d subtitles, found %d issues", len(subtitles), len(issues)
+        )
         return issues

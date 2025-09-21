@@ -23,9 +23,14 @@ class TestDetectEncoding:
 
     def test_detect_encoding_utf8(self) -> None:
         """Test detecting UTF-8 encoding."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             # Write content longer than 100 characters to trigger detection
-            content = "1\n00:00:01,000 --> 00:00:02,000\nThis is a test subtitle with unicode: äöü中文\n" * 5
+            content = (
+                "1\n00:00:01,000 --> 00:00:02,000\nThis is a test subtitle with unicode: äöü中文\n"
+                * 5
+            )
             tmp.write(content)
             tmp_path = tmp.name
 
@@ -37,10 +42,13 @@ class TestDetectEncoding:
 
     def test_detect_encoding_utf8_sig(self) -> None:
         """Test detecting UTF-8 with BOM encoding."""
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".srt") as tmp:
             # Write UTF-8 BOM + content longer than 100 characters
-            content = "1\n00:00:01,000 --> 00:00:02,000\nThis is a test subtitle with BOM\n" * 5
-            tmp.write(b'\xef\xbb\xbf' + content.encode('utf-8'))
+            content = (
+                "1\n00:00:01,000 --> 00:00:02,000\nThis is a test subtitle with BOM\n"
+                * 5
+            )
+            tmp.write(b"\xef\xbb\xbf" + content.encode("utf-8"))
             tmp_path = tmp.name
 
         try:
@@ -56,7 +64,9 @@ class TestDetectEncoding:
 
     def test_detect_encoding_empty_file(self) -> None:
         """Test detect_encoding with empty file."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             # Write minimal content (less than 100 chars)
             tmp.write("test")
             tmp_path = tmp.name
@@ -70,7 +80,9 @@ class TestDetectEncoding:
 
     def test_detect_encoding_custom_encodings_list(self) -> None:
         """Test detect_encoding with custom encodings list."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle content\n" * 5
             tmp.write(content)
             tmp_path = tmp.name
@@ -83,9 +95,9 @@ class TestDetectEncoding:
 
     def test_detect_encoding_invalid_encoding(self) -> None:
         """Test detect_encoding with file that has encoding issues."""
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".srt") as tmp:
             # Write invalid UTF-8 bytes
-            tmp.write(b'\xff\xfe' + b'invalid utf-8 content' * 10)
+            tmp.write(b"\xff\xfe" + b"invalid utf-8 content" * 10)
             tmp_path = tmp.name
 
         try:
@@ -105,8 +117,11 @@ class TestConvertSubtitleEncoding:
             output_file = Path(tmp_dir) / "output.srt"
 
             # Create input file with enough content for encoding detection
-            content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle with enough content for encoding detection\n" * 3
-            input_file.write_text(content, encoding='utf-8')
+            content = (
+                "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle with enough content for encoding detection\n"
+                * 3
+            )
+            input_file.write_text(content, encoding="utf-8")
 
             result = convert_subtitle_encoding(
                 str(input_file), str(output_file), "utf-8-sig"
@@ -116,9 +131,9 @@ class TestConvertSubtitleEncoding:
             assert output_file.exists()
 
             # Check BOM was added
-            with open(output_file, 'rb') as f:
+            with open(output_file, "rb") as f:
                 data = f.read()
-                assert data.startswith(b'\xef\xbb\xbf')
+                assert data.startswith(b"\xef\xbb\xbf")
 
     def test_convert_explicit_source_encoding(self) -> None:
         """Test conversion with explicit source encoding."""
@@ -126,8 +141,11 @@ class TestConvertSubtitleEncoding:
             input_file = Path(tmp_dir) / "input.srt"
             output_file = Path(tmp_dir) / "output.srt"
 
-            content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle with content for encoding detection\n" * 3
-            input_file.write_text(content, encoding='utf-8')
+            content = (
+                "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle with content for encoding detection\n"
+                * 3
+            )
+            input_file.write_text(content, encoding="utf-8")
 
             result = convert_subtitle_encoding(
                 str(input_file), str(output_file), "utf-8", source_encoding="utf-8"
@@ -154,7 +172,7 @@ class TestConvertSubtitleEncoding:
             output_file = Path(tmp_dir) / "output.srt"
 
             content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n"
-            input_file.write_text(content, encoding='utf-8')
+            input_file.write_text(content, encoding="utf-8")
 
             result = convert_subtitle_encoding(
                 str(input_file), str(output_file), "invalid-encoding"
@@ -168,8 +186,11 @@ class TestConvertSubtitleEncoding:
             input_file = Path(tmp_dir) / "input.srt"
             output_file = Path(tmp_dir) / "subdir" / "output.srt"
 
-            content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle with content for encoding detection\n" * 3
-            input_file.write_text(content, encoding='utf-8')
+            content = (
+                "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle with content for encoding detection\n"
+                * 3
+            )
+            input_file.write_text(content, encoding="utf-8")
 
             result = convert_subtitle_encoding(
                 str(input_file), str(output_file), "utf-8"
@@ -181,9 +202,14 @@ class TestConvertSubtitleEncoding:
 
     def test_convert_file_write_error(self, test_data_dir: Path) -> None:
         """Test conversion with file write error by using invalid encoding."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             # Write enough content for detection
-            content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle content for detection\n" * 3
+            content = (
+                "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle content for detection\n"
+                * 3
+            )
             tmp.write(content)
             tmp_path = tmp.name
 
@@ -192,7 +218,9 @@ class TestConvertSubtitleEncoding:
 
         try:
             # Test conversion failure by providing an unsupported encoding
-            result = convert_subtitle_encoding(tmp_path, str(output_path), "totally-invalid-encoding-name")
+            result = convert_subtitle_encoding(
+                tmp_path, str(output_path), "totally-invalid-encoding-name"
+            )
             assert result is False
         finally:
             Path(tmp_path).unlink(missing_ok=True)
@@ -208,7 +236,7 @@ class TestConvertToMultipleEncodings:
             input_file = Path(tmp_dir) / "input.srt"
 
             content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n"
-            input_file.write_text(content, encoding='utf-8')
+            input_file.write_text(content, encoding="utf-8")
 
             result = convert_to_multiple_encodings(
                 str(input_file), tmp_dir, ["utf-8", "utf-8-sig"]
@@ -225,7 +253,7 @@ class TestConvertToMultipleEncodings:
             input_file = Path(tmp_dir) / "input.srt"
 
             content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n"
-            input_file.write_text(content, encoding='utf-8')
+            input_file.write_text(content, encoding="utf-8")
 
             result = convert_to_multiple_encodings(str(input_file), tmp_dir)
 
@@ -240,9 +268,11 @@ class TestConvertToMultipleEncodings:
             input_file = Path(tmp_dir) / "input.srt"
 
             content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n"
-            input_file.write_text(content, encoding='utf-8')
+            input_file.write_text(content, encoding="utf-8")
 
-            result = convert_to_multiple_encodings(str(input_file), target_encodings=["utf-8"])
+            result = convert_to_multiple_encodings(
+                str(input_file), target_encodings=["utf-8"]
+            )
 
             assert isinstance(result, dict)
             assert "utf-8" in result
@@ -261,10 +291,12 @@ class TestConvertToMultipleEncodings:
             input_file = Path(tmp_dir) / "input.srt"
 
             content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n"
-            input_file.write_text(content, encoding='utf-8')
+            input_file.write_text(content, encoding="utf-8")
 
             # Mock detect_encoding to return utf-8
-            with patch('subtitletools.utils.encoding.detect_encoding', return_value='utf-8'):
+            with patch(
+                "subtitletools.utils.encoding.detect_encoding", return_value="utf-8"
+            ):
                 result = convert_to_multiple_encodings(
                     str(input_file), tmp_dir, ["utf-8"]
                 )
@@ -277,7 +309,7 @@ class TestConvertToMultipleEncodings:
             input_file = Path(tmp_dir) / "input-utf-8.srt"
 
             content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n"
-            input_file.write_text(content, encoding='utf-8')
+            input_file.write_text(content, encoding="utf-8")
 
             result = convert_to_multiple_encodings(
                 str(input_file), tmp_dir, ["utf-8-sig"]
@@ -286,7 +318,7 @@ class TestConvertToMultipleEncodings:
             assert isinstance(result, dict)
             assert "utf-8-sig" in result
 
-    @patch('os.makedirs')
+    @patch("os.makedirs")
     def test_convert_to_multiple_creates_output_dir(self, mock_makedirs: Mock) -> None:
         """Test that output directory is created if it doesn't exist."""
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -294,9 +326,9 @@ class TestConvertToMultipleEncodings:
             output_dir = Path(tmp_dir) / "nonexistent"
 
             content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n"
-            input_file.write_text(content, encoding='utf-8')
+            input_file.write_text(content, encoding="utf-8")
 
-            with patch('os.path.exists', side_effect=lambda x: x != str(output_dir)):
+            with patch("os.path.exists", side_effect=lambda x: x != str(output_dir)):
                 convert_to_multiple_encodings(
                     str(input_file), str(output_dir), ["utf-8"]
                 )
@@ -310,30 +342,31 @@ class TestGetRecommendedEncodings:
     def test_get_recommended_encodings_known_language(self) -> None:
         """Test getting recommended encodings for a known language."""
         # Mock LANGUAGE_ENCODINGS to have Chinese encodings
-        with patch('subtitletools.utils.encoding.LANGUAGE_ENCODINGS', {
-            'zh': ['utf-8', 'gb2312', 'gbk'],
-            'zh-CN': ['utf-8', 'gb2312']
-        }):
-            result = get_recommended_encodings('zh-CN')
-            assert result == ['utf-8', 'gb2312']
+        with patch(
+            "subtitletools.utils.encoding.LANGUAGE_ENCODINGS",
+            {"zh": ["utf-8", "gb2312", "gbk"], "zh-CN": ["utf-8", "gb2312"]},
+        ):
+            result = get_recommended_encodings("zh-CN")
+            assert result == ["utf-8", "gb2312"]
 
     def test_get_recommended_encodings_base_language(self) -> None:
         """Test getting recommended encodings falls back to base language."""
-        with patch('subtitletools.utils.encoding.LANGUAGE_ENCODINGS', {
-            'ja': ['utf-8', 'shift_jis', 'euc-jp']
-        }):
-            result = get_recommended_encodings('ja-JP')
-            assert result == ['utf-8', 'shift_jis', 'euc-jp']
+        with patch(
+            "subtitletools.utils.encoding.LANGUAGE_ENCODINGS",
+            {"ja": ["utf-8", "shift_jis", "euc-jp"]},
+        ):
+            result = get_recommended_encodings("ja-JP")
+            assert result == ["utf-8", "shift_jis", "euc-jp"]
 
     def test_get_recommended_encodings_unknown_language(self) -> None:
         """Test getting recommended encodings for unknown language returns default."""
-        with patch('subtitletools.utils.encoding.LANGUAGE_ENCODINGS', {}):
-            result = get_recommended_encodings('unknown')
+        with patch("subtitletools.utils.encoding.LANGUAGE_ENCODINGS", {}):
+            result = get_recommended_encodings("unknown")
             assert result == ["utf-8", "utf-8-sig", "cp1252", "iso8859-1", "iso8859-15"]
 
     def test_get_recommended_encodings_empty_language(self) -> None:
         """Test getting recommended encodings for empty language."""
-        result = get_recommended_encodings('')
+        result = get_recommended_encodings("")
         assert isinstance(result, list)
         assert len(result) > 0
 
@@ -343,23 +376,23 @@ class TestValidateEncoding:
 
     def test_validate_encoding_valid(self) -> None:
         """Test validating a valid encoding that can handle unicode."""
-        assert validate_encoding('utf-8') is True
-        assert validate_encoding('utf-8-sig') is True
+        assert validate_encoding("utf-8") is True
+        assert validate_encoding("utf-8-sig") is True
 
     def test_validate_encoding_limited(self) -> None:
         """Test encodings that exist but can't handle all unicode characters."""
         # These encodings exist but the function tests with unicode chars that they can't encode
         # The function should catch UnicodeEncodeError and return False, but currently doesn't
         with pytest.raises(UnicodeEncodeError):
-            validate_encoding('cp1252')
+            validate_encoding("cp1252")
 
         with pytest.raises(UnicodeEncodeError):
-            validate_encoding('ascii')
+            validate_encoding("ascii")
 
     def test_validate_encoding_invalid(self) -> None:
         """Test validating an invalid encoding."""
-        assert validate_encoding('invalid-encoding') is False
-        assert validate_encoding('nonexistent') is False
+        assert validate_encoding("invalid-encoding") is False
+        assert validate_encoding("nonexistent") is False
 
     def test_validate_encoding_none(self) -> None:
         """Test validating None as encoding."""
@@ -368,7 +401,7 @@ class TestValidateEncoding:
 
     def test_validate_encoding_empty_string(self) -> None:
         """Test validating empty string as encoding."""
-        assert validate_encoding('') is False
+        assert validate_encoding("") is False
 
 
 class TestGetFileEncodingInfo:
@@ -376,7 +409,9 @@ class TestGetFileEncodingInfo:
 
     def test_get_file_encoding_info_success(self) -> None:
         """Test getting encoding info for a valid file."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle content\n" * 5
             tmp.write(content)
             tmp_path = tmp.name
@@ -404,13 +439,15 @@ class TestGetFileEncodingInfo:
             "detected_encoding": None,
             "confidence": None,
             "file_size": None,
-            "readable": False
+            "readable": False,
         }
         assert result == expected
 
     def test_get_file_encoding_info_empty_file(self) -> None:
         """Test getting encoding info for empty file."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp_path = tmp.name  # Empty file
 
         try:
@@ -422,13 +459,15 @@ class TestGetFileEncodingInfo:
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 
-    @patch('subtitletools.utils.encoding.detect_encoding')
-    @patch('os.path.getsize')
-    def test_get_file_encoding_info_exception(self, mock_getsize: Mock, mock_detect: Mock) -> None:
+    @patch("subtitletools.utils.encoding.detect_encoding")
+    @patch("os.path.getsize")
+    def test_get_file_encoding_info_exception(
+        self, mock_getsize: Mock, mock_detect: Mock
+    ) -> None:
         """Test handling exceptions in get_file_encoding_info."""
         mock_getsize.side_effect = OSError("Permission denied")
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".srt") as tmp:
             tmp_path = tmp.name
 
         try:
@@ -492,13 +531,15 @@ class TestConvertToMultipleEncodingsExtensive:
         result = convert_to_multiple_encodings(
             "nonexistent_file.srt",
             output_dir="output",
-            target_encodings=["utf-8", "cp1252"]
+            target_encodings=["utf-8", "cp1252"],
         )
         assert result == {"utf-8": False, "cp1252": False}
 
     def test_convert_to_multiple_encodings_default_encodings(self) -> None:
         """Test convert_to_multiple_encodings with default encodings."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp.write("1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
@@ -515,11 +556,15 @@ class TestConvertToMultipleEncodingsExtensive:
                 output_file = output_dir / f"{Path(tmp_path).stem}-{encoding}.srt"
                 output_file.unlink(missing_ok=True)
 
-    @patch('os.makedirs')
-    @patch('os.path.exists')
-    def test_convert_to_multiple_encodings_create_output_dir(self, mock_exists: Mock, mock_makedirs: Mock) -> None:
+    @patch("os.makedirs")
+    @patch("os.path.exists")
+    def test_convert_to_multiple_encodings_create_output_dir(
+        self, mock_exists: Mock, mock_makedirs: Mock
+    ) -> None:
         """Test that output directory is created if it doesn't exist."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp.write("1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
@@ -530,12 +575,15 @@ class TestConvertToMultipleEncodingsExtensive:
             # Mock file exists but directory doesn't
             mock_exists.side_effect = lambda path: path == tmp_path
 
-            with patch('subtitletools.utils.encoding.detect_encoding', return_value='utf-8'):
-                with patch('subtitletools.utils.encoding.convert_subtitle_encoding', return_value=True):
+            with patch(
+                "subtitletools.utils.encoding.detect_encoding", return_value="utf-8"
+            ):
+                with patch(
+                    "subtitletools.utils.encoding.convert_subtitle_encoding",
+                    return_value=True,
+                ):
                     convert_to_multiple_encodings(
-                        tmp_path,
-                        output_dir=output_dir,
-                        target_encodings=["utf-8"]
+                        tmp_path, output_dir=output_dir, target_encodings=["utf-8"]
                     )
 
             # Should attempt to create directory
@@ -543,19 +591,22 @@ class TestConvertToMultipleEncodingsExtensive:
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 
-    @patch('subtitletools.utils.encoding.detect_encoding')
-    def test_convert_to_multiple_encodings_detection_failure(self, mock_detect: Mock) -> None:
+    @patch("subtitletools.utils.encoding.detect_encoding")
+    def test_convert_to_multiple_encodings_detection_failure(
+        self, mock_detect: Mock
+    ) -> None:
         """Test convert_to_multiple_encodings when encoding detection fails."""
         mock_detect.return_value = None
 
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp.write("1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
         try:
             result = convert_to_multiple_encodings(
-                tmp_path,
-                target_encodings=["utf-8", "cp1252"]
+                tmp_path, target_encodings=["utf-8", "cp1252"]
             )
 
             # Should fail for all encodings when detection fails
@@ -566,18 +617,19 @@ class TestConvertToMultipleEncodingsExtensive:
 
     def test_convert_to_multiple_encodings_encoding_suffix_removal(self) -> None:
         """Test that existing encoding suffixes are removed from filenames."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp.write("1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
         # Rename file to include encoding suffix
-        new_path = str(tmp_path).replace('.srt', '-utf-8.srt')
+        new_path = str(tmp_path).replace(".srt", "-utf-8.srt")
         os.rename(tmp_path, new_path)
 
         try:
             result = convert_to_multiple_encodings(
-                new_path,
-                target_encodings=["cp1252"]
+                new_path, target_encodings=["cp1252"]
             )
 
             # Should remove the existing encoding suffix when creating new filename
@@ -591,24 +643,29 @@ class TestConvertToMultipleEncodingsExtensive:
             # Clean up potential output files
             output_dir = Path(new_path).parent
             for suffix in ["-cp1252.srt"]:
-                potential_file = output_dir / f"{Path(new_path).stem.replace('-utf-8', '')}{suffix}"
+                potential_file = (
+                    output_dir / f"{Path(new_path).stem.replace('-utf-8', '')}{suffix}"
+                )
                 potential_file.unlink(missing_ok=True)
 
-    @patch('subtitletools.utils.encoding.convert_subtitle_encoding')
-    @patch('subtitletools.utils.encoding.detect_encoding')
-    def test_convert_to_multiple_encodings_conversion_success(self, mock_detect: Mock, mock_convert: Mock) -> None:
+    @patch("subtitletools.utils.encoding.convert_subtitle_encoding")
+    @patch("subtitletools.utils.encoding.detect_encoding")
+    def test_convert_to_multiple_encodings_conversion_success(
+        self, mock_detect: Mock, mock_convert: Mock
+    ) -> None:
         """Test successful conversion with mocked convert function."""
         mock_detect.return_value = "utf-8"  # Mock successful encoding detection
         mock_convert.return_value = True  # Mock successful conversion
 
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp.write("1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
         try:
             result = convert_to_multiple_encodings(
-                tmp_path,
-                target_encodings=["cp1252", "iso8859-1"]
+                tmp_path, target_encodings=["cp1252", "iso8859-1"]
             )
 
             assert result == {"cp1252": True, "iso8859-1": True}
@@ -616,22 +673,25 @@ class TestConvertToMultipleEncodingsExtensive:
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 
-    @patch('subtitletools.utils.encoding.convert_subtitle_encoding')
-    @patch('subtitletools.utils.encoding.detect_encoding')
-    def test_convert_to_multiple_encodings_partial_failure(self, mock_detect: Mock, mock_convert: Mock) -> None:
+    @patch("subtitletools.utils.encoding.convert_subtitle_encoding")
+    @patch("subtitletools.utils.encoding.detect_encoding")
+    def test_convert_to_multiple_encodings_partial_failure(
+        self, mock_detect: Mock, mock_convert: Mock
+    ) -> None:
         """Test partial conversion failure."""
         mock_detect.return_value = "utf-8"  # Mock successful encoding detection
         # First call succeeds, second fails
         mock_convert.side_effect = [True, False]  # First succeeds, second fails
 
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp.write("1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
         try:
             result = convert_to_multiple_encodings(
-                tmp_path,
-                target_encodings=["cp1252", "iso8859-1"]
+                tmp_path, target_encodings=["cp1252", "iso8859-1"]
             )
 
             assert result == {"cp1252": True, "iso8859-1": False}
@@ -639,21 +699,24 @@ class TestConvertToMultipleEncodingsExtensive:
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 
-    @patch('subtitletools.utils.encoding.convert_subtitle_encoding')
-    @patch('subtitletools.utils.encoding.detect_encoding')
-    def test_convert_to_multiple_encodings_exception_handling(self, mock_detect: Mock, mock_convert: Mock) -> None:
+    @patch("subtitletools.utils.encoding.convert_subtitle_encoding")
+    @patch("subtitletools.utils.encoding.detect_encoding")
+    def test_convert_to_multiple_encodings_exception_handling(
+        self, mock_detect: Mock, mock_convert: Mock
+    ) -> None:
         """Test exception handling during conversion."""
         mock_detect.return_value = "utf-8"  # Mock successful encoding detection
         mock_convert.return_value = False  # Mock failed conversion instead of exception
 
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp.write("1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
         try:
             result = convert_to_multiple_encodings(
-                tmp_path,
-                target_encodings=["cp1252"]
+                tmp_path, target_encodings=["cp1252"]
             )
 
             assert result == {"cp1252": False}
@@ -663,15 +726,16 @@ class TestConvertToMultipleEncodingsExtensive:
 
     def test_convert_to_multiple_encodings_default_output_dir(self) -> None:
         """Test using default output directory (same as input)."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp.write("1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
         try:
             # Don't specify output_dir - should default to same directory as input
             result = convert_to_multiple_encodings(
-                tmp_path,
-                target_encodings=["utf-8"]  # Same encoding should work
+                tmp_path, target_encodings=["utf-8"]  # Same encoding should work
             )
 
             assert isinstance(result, dict)
@@ -690,9 +754,7 @@ class TestAdditionalEncodingCoverage:
     def test_convert_to_multiple_encodings_nonexistent_file(self) -> None:
         """Test convert_to_multiple_encodings with nonexistent file."""
         results = convert_to_multiple_encodings(
-            "nonexistent_file.srt",
-            None,
-            ["utf-8", "cp1252"]
+            "nonexistent_file.srt", None, ["utf-8", "cp1252"]
         )
 
         assert isinstance(results, dict)
@@ -702,7 +764,9 @@ class TestAdditionalEncodingCoverage:
     def test_convert_to_multiple_encodings_create_output_dir(self) -> None:
         """Test convert_to_multiple_encodings creates output directory."""
         # Create a test file
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp.write("1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n\n")
             tmp_path = tmp.name
 
@@ -710,11 +774,7 @@ class TestAdditionalEncodingCoverage:
         output_dir = os.path.join(os.path.dirname(tmp_path), "new_output_dir")
 
         try:
-            results = convert_to_multiple_encodings(
-                tmp_path,
-                output_dir,
-                ["utf-8"]
-            )
+            results = convert_to_multiple_encodings(tmp_path, output_dir, ["utf-8"])
 
             assert isinstance(results, dict)
             assert os.path.exists(output_dir)
@@ -724,25 +784,31 @@ class TestAdditionalEncodingCoverage:
             # Clean up output directory
             if os.path.exists(output_dir):
                 import shutil
+
                 shutil.rmtree(output_dir)
 
     def test_convert_to_multiple_encodings_same_file_skip(self) -> None:
         """Test convert_to_multiple_encodings skips when same file."""
         # Create a test file with UTF-8 encoding with enough content for detection
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
-            content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle with enough content for encoding detection\n\n" * 5
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
+            content = (
+                "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle with enough content for encoding detection\n\n"
+                * 5
+            )
             tmp.write(content)
             tmp_path = tmp.name
 
         try:
             # Test case where source and target would be same file
             # Mock both detect_encoding and os.path.samefile
-            with patch('subtitletools.utils.encoding.detect_encoding', return_value='utf-8'):
-                with patch('os.path.samefile', return_value=True):
+            with patch(
+                "subtitletools.utils.encoding.detect_encoding", return_value="utf-8"
+            ):
+                with patch("os.path.samefile", return_value=True):
                     results = convert_to_multiple_encodings(
-                        tmp_path,
-                        os.path.dirname(tmp_path),
-                        ["utf-8"]
+                        tmp_path, os.path.dirname(tmp_path), ["utf-8"]
                     )
 
                 assert isinstance(results, dict)
@@ -755,16 +821,12 @@ class TestAdditionalEncodingCoverage:
     def test_convert_to_multiple_encodings_detection_failure(self) -> None:
         """Test convert_to_multiple_encodings when encoding detection fails."""
         # Create a binary file that's not text
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.srt') as tmp:
-            tmp.write(b'\x00\x01\x02\x03\x04\x05')  # Binary data
+        with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".srt") as tmp:
+            tmp.write(b"\x00\x01\x02\x03\x04\x05")  # Binary data
             tmp_path = tmp.name
 
         try:
-            results = convert_to_multiple_encodings(
-                tmp_path,
-                None,
-                ["utf-8", "cp1252"]
-            )
+            results = convert_to_multiple_encodings(tmp_path, None, ["utf-8", "cp1252"])
 
             # Should fail for all encodings when detection fails
             assert isinstance(results, dict)
@@ -776,20 +838,20 @@ class TestAdditionalEncodingCoverage:
     def test_convert_to_multiple_encodings_stem_with_encoding(self) -> None:
         """Test convert_to_multiple_encodings with filename that already has encoding suffix."""
         # Create a test file with encoding suffix in name
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             content = "1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n\n"
             tmp.write(content)
             tmp_path = tmp.name
 
         # Rename to include encoding suffix
-        stem_with_encoding = tmp_path.replace('.srt', '-utf-8.srt')
+        stem_with_encoding = tmp_path.replace(".srt", "-utf-8.srt")
         os.rename(tmp_path, stem_with_encoding)
 
         try:
             results = convert_to_multiple_encodings(
-                stem_with_encoding,
-                None,
-                ["cp1252"]
+                stem_with_encoding, None, ["cp1252"]
             )
 
             assert isinstance(results, dict)
@@ -798,24 +860,26 @@ class TestAdditionalEncodingCoverage:
         finally:
             Path(stem_with_encoding).unlink(missing_ok=True)
             # Clean up created files
-            output_dir = os.path.dirname(stem_with_encoding) if stem_with_encoding else "."
+            output_dir = (
+                os.path.dirname(stem_with_encoding) if stem_with_encoding else "."
+            )
             for file in Path(output_dir).glob("*-cp1252.srt"):
                 file.unlink(missing_ok=True)
 
     def test_convert_to_multiple_encodings_os_error_handling(self) -> None:
         """Test convert_to_multiple_encodings handles OSError during file comparison."""
-        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', delete=False, suffix='.srt') as tmp:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", delete=False, suffix=".srt"
+        ) as tmp:
             tmp.write("1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n\n")
             tmp_path = tmp.name
 
         try:
             # Mock os.path.samefile to raise OSError
-            with patch('os.path.samefile', side_effect=OSError("File comparison failed")):
-                results = convert_to_multiple_encodings(
-                    tmp_path,
-                    None,
-                    ["utf-8"]
-                )
+            with patch(
+                "os.path.samefile", side_effect=OSError("File comparison failed")
+            ):
+                results = convert_to_multiple_encodings(tmp_path, None, ["utf-8"])
 
             assert isinstance(results, dict)
             assert "utf-8" in results
@@ -827,8 +891,8 @@ class TestAdditionalEncodingCoverage:
     def test_get_file_encoding_info_detection_failure(self) -> None:
         """Test get_file_encoding_info when encoding detection fails."""
         # Create a binary file that's not text
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.srt') as tmp:
-            tmp.write(b'\x00\x01\x02\x03\x04\x05')  # Binary data
+        with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".srt") as tmp:
+            tmp.write(b"\x00\x01\x02\x03\x04\x05")  # Binary data
             tmp_path = tmp.name
 
         try:
@@ -853,10 +917,12 @@ class TestAdditionalEncodingCoverage:
         assert info["confidence"] is None
         assert info["readable"] is False
 
-    @patch('os.path.exists')
-    @patch('os.path.getsize')
-    @patch('subtitletools.utils.encoding.detect_encoding')
-    def test_get_file_encoding_info_specific_exception_handling(self, mock_detect: Mock, mock_getsize: Mock, mock_exists: Mock) -> None:
+    @patch("os.path.exists")
+    @patch("os.path.getsize")
+    @patch("subtitletools.utils.encoding.detect_encoding")
+    def test_get_file_encoding_info_specific_exception_handling(
+        self, mock_detect: Mock, mock_getsize: Mock, mock_exists: Mock
+    ) -> None:
         """Test get_file_encoding_info handles specific exceptions during processing."""
         # Mock file to exist so we enter the try block
         mock_exists.return_value = True
@@ -864,7 +930,7 @@ class TestAdditionalEncodingCoverage:
         mock_getsize.side_effect = PermissionError("Access denied")
         mock_detect.side_effect = UnicodeDecodeError("utf-8", b"", 0, 1, "invalid byte")
 
-        with patch('subtitletools.utils.encoding.logger') as mock_logger:
+        with patch("subtitletools.utils.encoding.logger") as mock_logger:
             info = get_file_encoding_info("test_file.srt")
 
             assert isinstance(info, dict)

@@ -16,18 +16,20 @@ __all__: List[str] = []
 
 # Import core classes for convenience
 try:
+    from .subtitle import SubtitleProcessor
     from .transcription import SubWhisperTranscriber
     from .translation import SubtitleTranslator
-    from .subtitle import SubtitleProcessor
     from .workflow import SubtitleWorkflow
 
     # Export core processing classes
-    __all__.extend([
-        "SubWhisperTranscriber",  # Audio/video transcription
-        "SubtitleTranslator",     # Language translation
-        "SubtitleProcessor",      # Subtitle manipulation
-        "SubtitleWorkflow",       # End-to-end workflows
-    ])
+    __all__.extend(
+        [
+            "SubWhisperTranscriber",  # Audio/video transcription
+            "SubtitleTranslator",  # Language translation
+            "SubtitleProcessor",  # Subtitle manipulation
+            "SubtitleWorkflow",  # End-to-end workflows
+        ]
+    )
 except ImportError:
     # Allow partial imports during development
     logger.warning("Some core modules could not be imported")

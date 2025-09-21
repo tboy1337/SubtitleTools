@@ -149,10 +149,9 @@ class GoogleTranslator(Translator):
 
     def _calculate_backoff(self, retry_count: int) -> float:
         """Calculate exponential backoff time with jitter."""
-        backoff_time = float(min(
-            self.initial_backoff * (2 ** retry_count),
-            self.max_backoff
-        ))
+        backoff_time = float(
+            min(self.initial_backoff * (2**retry_count), self.max_backoff)
+        )
         jitter = float(backoff_time * self.jitter * random.random())
         return float(backoff_time + jitter)
 
@@ -160,7 +159,7 @@ class GoogleTranslator(Translator):
         self,
         url: str,
         data: Optional[str] = None,
-        headers: Optional[Dict[str, str]] = None
+        headers: Optional[Dict[str, str]] = None,
     ) -> str:
         """Make HTTP request with retry logic for rate limiting."""
         if headers is None:
@@ -186,15 +185,15 @@ class GoogleTranslator(Translator):
                             "Rate limited (attempt %d/%d). Waiting %.2f seconds...",
                             attempt + 1,
                             self.max_retries,
-                            backoff_time
+                            backoff_time,
                         )
                         time.sleep(backoff_time)
                         self._rotate_user_agent()
                         headers = self.headers.copy()
                         continue
                     raise RateLimitError(
-                            f"Rate limit exceeded after {self.max_retries} attempts"
-                        ) from e
+                        f"Rate limit exceeded after {self.max_retries} attempts"
+                    ) from e
                 # Server errors
                 if 500 <= e.code < 600:
                     if attempt < self.max_retries - 1:
@@ -204,7 +203,7 @@ class GoogleTranslator(Translator):
                             e.code,
                             attempt + 1,
                             self.max_retries,
-                            backoff_time
+                            backoff_time,
                         )
                         time.sleep(backoff_time)
                         continue
@@ -222,7 +221,7 @@ class GoogleTranslator(Translator):
                         attempt + 1,
                         self.max_retries,
                         e,
-                        backoff_time
+                        backoff_time,
                     )
                     time.sleep(backoff_time)
                     continue
@@ -253,7 +252,7 @@ class GoogleTranslator(Translator):
                 "q": text,
                 "source": src_lang,
                 "target": target_lang,
-                "format": "text"
+                "format": "text",
             }
 
             response = requests.post(url, json=data, timeout=30)
@@ -262,7 +261,9 @@ class GoogleTranslator(Translator):
             result = cast(Dict[str, Any], response.json())
 
             if "data" in result and "translations" in result["data"]:
-                translated_text = cast(Dict[str, Any], result["data"])["translations"][0]["translatedText"]
+                translated_text = cast(Dict[str, Any], result["data"])["translations"][
+                    0
+                ]["translatedText"]
                 return str(translated_text)
             raise TranslationError("Invalid API response format")
 
@@ -297,7 +298,10 @@ class GoogleTranslator(Translator):
                 "tk": tk,
             }
 
-            url = "https://translate.googleapis.com/translate_a/single?" + urllib.parse.urlencode(params)
+            url = (
+                "https://translate.googleapis.com/translate_a/single?"
+                + urllib.parse.urlencode(params)
+            )
 
             # Make request
             response = self._make_request_with_retry(url)
@@ -388,7 +392,7 @@ class GoogleTranslator(Translator):
                 progress_callback(
                     processed_lines,
                     len(text_list),
-                    f"Translating chunk {i + 1}/{len(chunks)}"
+                    f"Translating chunk {i + 1}/{len(chunks)}",
                 )
 
             chunk_text = "\n".join(chunk)
@@ -542,8 +546,13 @@ class SubtitleTranslator:
         """
         return {
             "service": str(self.service_name),
-            "has_api_key": bool(hasattr(self.translator, "api_key") and cast(Any, self.translator.api_key) is not None),
-            "max_text_length": cast(Optional[int], getattr(self.translator, "max_limited", None)),
+            "has_api_key": bool(
+                hasattr(self.translator, "api_key")
+                and cast(Any, self.translator.api_key) is not None
+            ),
+            "max_text_length": cast(
+                Optional[int], getattr(self.translator, "max_limited", None)
+            ),
         }
 
 

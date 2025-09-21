@@ -108,7 +108,9 @@ For more information, visit: https://github.com/tboy1337/SubtitleTools
     return parser
 
 
-def _add_transcribe_parser(subparsers: "_SubParsersAction[argparse.ArgumentParser]") -> None:
+def _add_transcribe_parser(
+    subparsers: "_SubParsersAction[argparse.ArgumentParser]",
+) -> None:
     """Add transcription command parser."""
     transcribe_parser = subparsers.add_parser(
         "transcribe",
@@ -159,7 +161,9 @@ def _add_transcribe_parser(subparsers: "_SubParsersAction[argparse.ArgumentParse
     )
 
 
-def _add_translate_parser(subparsers: "_SubParsersAction[argparse.ArgumentParser]") -> None:
+def _add_translate_parser(
+    subparsers: "_SubParsersAction[argparse.ArgumentParser]",
+) -> None:
     """Add translation command parser."""
     translate_parser = subparsers.add_parser(
         "translate",
@@ -233,7 +237,9 @@ def _add_translate_parser(subparsers: "_SubParsersAction[argparse.ArgumentParser
     )
 
 
-def _add_encode_parser(subparsers: "_SubParsersAction[argparse.ArgumentParser]") -> None:
+def _add_encode_parser(
+    subparsers: "_SubParsersAction[argparse.ArgumentParser]",
+) -> None:
     """Add encoding command parser."""
     encode_parser = subparsers.add_parser(
         "encode",
@@ -294,7 +300,9 @@ def _add_encode_parser(subparsers: "_SubParsersAction[argparse.ArgumentParser]")
     )
 
 
-def _add_workflow_parser(subparsers: "_SubParsersAction[argparse.ArgumentParser]") -> None:
+def _add_workflow_parser(
+    subparsers: "_SubParsersAction[argparse.ArgumentParser]",
+) -> None:
     """Add workflow command parser."""
     workflow_parser = subparsers.add_parser(
         "workflow",
@@ -420,276 +428,342 @@ def _add_workflow_parser(subparsers: "_SubParsersAction[argparse.ArgumentParser]
     )
 
 
-def handle_transcribe_command(args: argparse.Namespace) -> int:  # pylint: disable=too-many-return-statements
+def handle_transcribe_command(args: argparse.Namespace) -> int:
     """Handle the transcribe command."""
+    result_code = 1  # Default error code
+
     try:
-        transcriber = SubWhisperTranscriber(cast(Any, args).model, cast(Any, args).language)
+        transcriber = SubWhisperTranscriber(
+            cast(Any, args).model, cast(Any, args).language
+        )
 
         if cast(Any, args).batch or os.path.isdir(cast(Any, args).input):
             # Batch processing
             input_dir = Path(cast(Any, args).input)
             if not input_dir.is_dir():
                 logger.error("Input directory not found: %s", input_dir)
-                return 1
+            else:
+                # Find files
+                extensions = [ext.strip() for ext in cast(Any, args).extensions.split(",")]
+                files: List[Union[str, Path]] = []
+                for ext in extensions:
+                    files.extend(input_dir.glob(f"**/*.{ext}"))
+                    files.extend(input_dir.glob(f"**/*.{ext.upper()}"))
 
-            # Find files
-            extensions = [ext.strip() for ext in cast(Any, args).extensions.split(",")]
-            files: List[Union[str, Path]] = []
-            for ext in extensions:
-                files.extend(input_dir.glob(f"**/*.{ext}"))
-                files.extend(input_dir.glob(f"**/*.{ext.upper()}"))
+                if not files:
+                    logger.error(
+                        "No files found with extensions: %s", cast(Any, args).extensions
+                    )
+                else:
+                    output_dir = (
+                        Path(cast(Any, args).output) if cast(Any, args).output else input_dir
+                    )
 
-            if not files:
-                logger.error("No files found with extensions: %s", cast(Any, args).extensions)
-                return 1
+                    results = transcriber.batch_transcribe(
+                        files,
+                        output_dir,
+                        cast(Any, args).max_segment_length,
+                    )
 
-            output_dir = Path(cast(Any, args).output) if cast(Any, args).output else input_dir
+                    # Summary
+                    successful = sum(1 for r in results.values() if r["status"] == "success")
+                    print(f"\nTranscription completed: {successful}/{len(files)} successful")
 
-            results = transcriber.batch_transcribe(
-                files,
-                output_dir,
-                cast(Any, args).max_segment_length,
-            )
-
-            # Summary
-            successful = sum(1 for r in results.values() if r["status"] == "success")
-            print(f"\nTranscription completed: {successful}/{len(files)} successful")
-
-            return 0 if successful > 0 else 1
-
-        # Single file processing
-        input_path = Path(cast(Any, args).input)
-        output_path = Path(cast(Any, args).output) if cast(Any, args).output else input_path.with_suffix(".srt")
-
-        if is_video_file(input_path):
-            result_path = transcriber.transcribe_video(
-                input_path,
-                output_path,
-                cast(Any, args).max_segment_length,
-            )
-        elif is_audio_file(input_path):
-            transcription_result = transcriber.transcribe_audio(
-                input_path,
-                cast(Any, args).max_segment_length,
-            )
-            transcriber.generate_srt(transcription_result["segments"], output_path)
-            result_path = str(output_path)
+                    result_code = 0 if successful > 0 else 1
         else:
-            logger.error("Unsupported file type: %s", input_path)
-            return 1
+            # Single file processing
+            input_path = Path(cast(Any, args).input)
+            output_path = (
+                Path(cast(Any, args).output)
+                if cast(Any, args).output
+                else input_path.with_suffix(".srt")
+            )
 
-        print(f"Transcription completed: {result_path}")
-        return 0
+            if is_video_file(input_path):
+                result_path = transcriber.transcribe_video(
+                    input_path,
+                    output_path,
+                    cast(Any, args).max_segment_length,
+                )
+                print(f"Transcription completed: {result_path}")
+                result_code = 0
+            elif is_audio_file(input_path):
+                transcription_result = transcriber.transcribe_audio(
+                    input_path,
+                    cast(Any, args).max_segment_length,
+                )
+                transcriber.generate_srt(transcription_result["segments"], output_path)
+                result_path = str(output_path)
+                print(f"Transcription completed: {result_path}")
+                result_code = 0
+            else:
+                logger.error("Unsupported file type: %s", input_path)
 
     except TranscriptionError as e:
         logger.error("Transcription error: %s", e)
-        return 1
+        result_code = 1
     except (OSError, IOError) as e:
         logger.error("File system error: %s", e)
-        return 1
+        result_code = 1
     except KeyboardInterrupt:
         logger.info("Transcription interrupted by user")
-        return 130
+        result_code = 130
     except Exception as e:
         logger.error("Unexpected error: %s", e)
-        return 1
+        result_code = 1
+
+    return result_code
 
 
-def handle_translate_command(args: argparse.Namespace) -> int:  # pylint: disable=too-many-return-statements
+def _process_translation_batch(
+    files: List[Path],
+    translator: SubtitleTranslator,
+    subtitle_processor: SubtitleProcessor,
+    output_dir: Path,
+    args: argparse.Namespace,
+) -> int:
+    """Helper function to process translation batch with reduced nesting."""
+    successful = 0
+    for file_path in files:
+        try:
+            output_path = output_dir / file_path.name
+
+            # Parse subtitles
+            subtitles = subtitle_processor.parse_file(
+                file_path, cast(Any, args).encoding
+            )
+
+            # Extract and translate text
+            text_lines = subtitle_processor.extract_text(subtitles)
+            translated_lines = translator.translate_lines(
+                text_lines,
+                cast(Any, args).src_lang,
+                cast(Any, args).target_lang,
+            )
+
+            # Reconstruct and save
+            space = is_space_language(cast(Any, args).target_lang)
+            translated_subtitles = subtitle_processor.reconstruct_subtitles(
+                subtitles,
+                translated_lines,
+                space=space,
+                both=cast(Any, args).both,
+            )
+
+            subtitle_processor.save_file(
+                translated_subtitles, output_path, cast(Any, args).encoding
+            )
+            successful += 1
+            print(f"Translated: {file_path} -> {output_path}")
+
+        except (TranslationError, SubtitleError) as e:
+            logger.error("Failed to translate %s: %s", file_path, e)
+        except (OSError, IOError) as e:
+            logger.error("File error processing %s: %s", file_path, e)
+
+    print(f"\nTranslation completed: {successful}/{len(files)} successful")
+    return 0 if successful > 0 else 1
+
+
+def handle_translate_command(args: argparse.Namespace) -> int:
     """Handle the translate command."""
+    result_code = 1  # Default error code
+
     try:
-        translator = SubtitleTranslator(cast(Any, args).service, cast(Any, args).api_key)
+        translator = SubtitleTranslator(
+            cast(Any, args).service, cast(Any, args).api_key
+        )
         subtitle_processor = SubtitleProcessor()
 
         if cast(Any, args).batch or os.path.isdir(cast(Any, args).input):
             # Batch processing
             input_dir = Path(cast(Any, args).input)
-            output_dir = Path(cast(Any, args).output)
-
             if not input_dir.is_dir():
                 logger.error("Input directory not found: %s", input_dir)
-                return 1
+                return result_code
 
+            output_dir = Path(cast(Any, args).output)
             output_dir.mkdir(parents=True, exist_ok=True)
 
             # Find subtitle files
             files = list(input_dir.glob(cast(Any, args).pattern))
             if not files:
-                logger.error("No files matching pattern '%s' found", cast(Any, args).pattern)
-                return 1
+                logger.error(
+                    "No files matching pattern '%s' found", cast(Any, args).pattern
+                )
+                return result_code
 
-            successful = 0
-            for file_path in files:
-                try:
-                    output_path = output_dir / file_path.name
+            result_code = _process_translation_batch(
+                files, translator, subtitle_processor, output_dir, args
+            )
+        else:
+            # Single file processing
+            input_path = Path(cast(Any, args).input)
+            output_path = Path(cast(Any, args).output)
 
-                    # Parse subtitles
-                    subtitles = subtitle_processor.parse_file(file_path, cast(Any, args).encoding)
+            # Parse subtitles
+            subtitles = subtitle_processor.parse_file(input_path, cast(Any, args).encoding)
 
-                    # Extract and translate text
-                    text_lines = subtitle_processor.extract_text(subtitles)
-                    translated_lines = translator.translate_lines(
-                        text_lines,
-                        cast(Any, args).src_lang,
-                        cast(Any, args).target_lang,
-                    )
+            # Extract and translate text
+            text_lines = subtitle_processor.extract_text(subtitles)
+            translated_lines = translator.translate_lines(
+                text_lines,
+                cast(Any, args).src_lang,
+                cast(Any, args).target_lang,
+            )
 
-                    # Reconstruct and save
-                    space = is_space_language(cast(Any, args).target_lang)
+            # Reconstruct and save
+            space = is_space_language(cast(Any, args).target_lang)
+            translated_subtitles = subtitle_processor.reconstruct_subtitles(
+                subtitles,
+                translated_lines,
+                space=space,
+                both=cast(Any, args).both,
+            )
 
-                    translated_subtitles = subtitle_processor.reconstruct_subtitles(
-                        subtitles,
-                        translated_lines,
-                        space=space,
-                        both=cast(Any, args).both,
-                    )
-
-                    subtitle_processor.save_file(translated_subtitles, output_path, cast(Any, args).encoding)
-                    successful += 1
-                    print(f"Translated: {file_path} -> {output_path}")
-
-                except (TranslationError, SubtitleError) as e:
-                    logger.error("Failed to translate %s: %s", file_path, e)
-                except (OSError, IOError) as e:
-                    logger.error("File error processing %s: %s", file_path, e)
-
-            print(f"\nTranslation completed: {successful}/{len(files)} successful")
-            return 0 if successful > 0 else 1
-
-        # Single file processing
-        input_path = Path(cast(Any, args).input)
-        output_path = Path(cast(Any, args).output)
-
-        # Parse subtitles
-        subtitles = subtitle_processor.parse_file(input_path, cast(Any, args).encoding)
-
-        # Extract and translate text
-        text_lines = subtitle_processor.extract_text(subtitles)
-        translated_lines = translator.translate_lines(
-            text_lines,
-            cast(Any, args).src_lang,
-            cast(Any, args).target_lang,
-        )
-
-        # Reconstruct and save
-        space = is_space_language(cast(Any, args).target_lang)
-
-        translated_subtitles = subtitle_processor.reconstruct_subtitles(
-            subtitles,
-            translated_lines,
-            space=space,
-            both=cast(Any, args).both,
-        )
-
-        subtitle_processor.save_file(translated_subtitles, output_path, cast(Any, args).encoding)
-        print(f"Translation completed: {output_path}")
-        return 0
+            subtitle_processor.save_file(
+                translated_subtitles, output_path, cast(Any, args).encoding
+            )
+            print(f"Translation completed: {output_path}")
+            result_code = 0
 
     except (TranslationError, SubtitleError) as e:
         logger.error("Translation error: %s", e)
-        return 1
+        result_code = 1
     except (OSError, IOError) as e:
         logger.error("File system error: %s", e)
-        return 1
+        result_code = 1
     except KeyboardInterrupt:
         logger.info("Translation interrupted by user")
-        return 130
+        result_code = 130
     except Exception as e:
         logger.error("Unexpected error: %s", e)
-        return 1
+        result_code = 1
+
+    return result_code
 
 
-def handle_encode_command(args: argparse.Namespace) -> int:  # pylint: disable=too-many-return-statements
+def _process_encoding_batch(
+    files: List[Path], output_dir: Path, target_encodings: List[str]
+) -> int:
+    """Helper function to process encoding batch with reduced nesting."""
+    successful = 0
+    for file_path in files:
+        try:
+            results = convert_to_multiple_encodings(
+                str(file_path),
+                str(output_dir),
+                target_encodings,
+            )
+
+            # Print results for this file
+            print(f"\n{file_path.name}:")
+            for encoding, success in results.items():
+                status = "✓" if success else "✗"
+                print(f"  {status} {encoding}")
+
+            if any(results.values()):
+                successful += 1
+
+        except (OSError, IOError, UnicodeError) as e:
+            logger.error("Failed to process %s: %s", file_path, e)
+        except Exception as e:
+            logger.error("Failed to process %s: %s", file_path, e)
+
+    print(
+        f"\nEncoding conversion completed: {successful}/{len(files)} files successful"
+    )
+    return 0 if successful > 0 else 1
+
+
+def handle_encode_command(args: argparse.Namespace) -> int:
     """Handle the encode command."""
+    result_code = 1  # Default error code
+
     try:
         # List encodings if requested
         if cast(Any, args).list_encodings:
             print("Supported encodings:")
             for encoding in sorted(SUPPORTED_ENCODINGS):
                 print(f"  {encoding}")
-            return 0
-
-        if not cast(Any, args).input:
-            print("Error: Input file/directory is required unless --list-encodings is used")
-            return 1
-
-        # Determine target encodings
-        if cast(Any, args).to_encoding:
-            target_encodings = [enc.strip() for enc in cast(Any, args).to_encoding.split(",")]
-        elif cast(Any, args).recommended:
-            target_encodings = get_recommended_encodings(cast(Any, args).language)
-            print(f"Using recommended encodings for '{cast(Any, args).language}': {', '.join(target_encodings)}")
+            result_code = 0
+        elif not cast(Any, args).input:
+            print(
+                "Error: Input file/directory is required unless --list-encodings is used"
+            )
+            result_code = 1
         else:
-            target_encodings = ["utf-8", "utf-8-sig"]
-            print(f"Using default encodings: {', '.join(target_encodings)}")
+            # Determine target encodings
+            if cast(Any, args).to_encoding:
+                target_encodings = [
+                    enc.strip() for enc in cast(Any, args).to_encoding.split(",")
+                ]
+            elif cast(Any, args).recommended:
+                target_encodings = get_recommended_encodings(cast(Any, args).language)
+                print(
+                    f"Using recommended encodings for '{cast(Any, args).language}': {', '.join(target_encodings)}"
+                )
+            else:
+                target_encodings = ["utf-8", "utf-8-sig"]
+                print(f"Using default encodings: {', '.join(target_encodings)}")
 
-        if cast(Any, args).batch or os.path.isdir(cast(Any, args).input):
-            # Batch processing
-            input_dir = Path(cast(Any, args).input)
-            output_dir = Path(cast(Any, args).output_dir) if cast(Any, args).output_dir else input_dir
+            if cast(Any, args).batch or os.path.isdir(cast(Any, args).input):
+                # Batch processing
+                input_dir = Path(cast(Any, args).input)
+                output_dir = (
+                    Path(cast(Any, args).output_dir)
+                    if cast(Any, args).output_dir
+                    else input_dir
+                )
 
-            files = list(input_dir.glob(cast(Any, args).pattern))
-            if not files:
-                logger.error("No files matching pattern '%s' found", cast(Any, args).pattern)
-                return 1
-
-            successful = 0
-            for file_path in files:
-                try:
-                    results = convert_to_multiple_encodings(
-                        str(file_path),
-                        str(output_dir),
-                        target_encodings,
+                files = list(input_dir.glob(cast(Any, args).pattern))
+                if not files:
+                    logger.error(
+                        "No files matching pattern '%s' found", cast(Any, args).pattern
                     )
+                    return result_code
 
-                    # Print results for this file
-                    print(f"\n{file_path.name}:")
-                    for encoding, success in results.items():
-                        status = "✓" if success else "✗"
-                        print(f"  {status} {encoding}")
+                result_code = _process_encoding_batch(files, output_dir, target_encodings)
+            else:
+                # Single file processing
+                input_path = Path(cast(Any, args).input)
+                output_dir = (
+                    Path(cast(Any, args).output_dir)
+                    if cast(Any, args).output_dir
+                    else input_path.parent
+                )
 
-                    if any(results.values()):
-                        successful += 1
+                results = convert_to_multiple_encodings(
+                    str(input_path),
+                    str(output_dir),
+                    target_encodings,
+                )
 
-                except (OSError, IOError, UnicodeError) as e:
-                    logger.error("Failed to process %s: %s", file_path, e)
-                except Exception as e:
-                    logger.error("Failed to process %s: %s", file_path, e)
+                # Print results
+                print(f"\nConversion results for {input_path.name}:")
+                for encoding, success in results.items():
+                    status = "✓" if success else "✗"
+                    print(f"  {status} {encoding}")
 
-            print(f"\nEncoding conversion completed: {successful}/{len(files)} files successful")
-            return 0 if successful > 0 else 1
-
-        # Single file processing
-        input_path = Path(cast(Any, args).input)
-        output_dir = Path(cast(Any, args).output_dir) if cast(Any, args).output_dir else input_path.parent
-
-        results = convert_to_multiple_encodings(
-            str(input_path),
-            str(output_dir),
-            target_encodings,
-        )
-
-        # Print results
-        print(f"\nConversion results for {input_path.name}:")
-        for encoding, success in results.items():
-            status = "✓" if success else "✗"
-            print(f"  {status} {encoding}")
-
-        return 0 if any(results.values()) else 1
+                result_code = 0 if any(results.values()) else 1
 
     except (OSError, IOError, UnicodeError) as e:
         logger.error("Encoding error: %s", e)
-        return 1
+        result_code = 1
     except KeyboardInterrupt:
         logger.info("Encoding conversion interrupted by user")
-        return 130
+        result_code = 130
     except Exception as e:
         logger.error("Unexpected error: %s", e)
-        return 1
+        result_code = 1
+
+    return result_code
 
 
-def handle_workflow_command(args: argparse.Namespace) -> int:  # pylint: disable=too-many-return-statements
+def handle_workflow_command(args: argparse.Namespace) -> int:
     """Handle the workflow command."""
+    result_code = 1  # Default error code
+
     try:
         # Check post-processing environment if needed
         postprocess_ops = []
@@ -717,7 +791,9 @@ def handle_workflow_command(args: argparse.Namespace) -> int:  # pylint: disable
         if cast(Any, args).batch or os.path.isdir(cast(Any, args).input):
             # Batch processing
             input_dir = Path(cast(Any, args).input)
-            output_dir = Path(cast(Any, args).output) if cast(Any, args).output else input_dir
+            output_dir = (
+                Path(cast(Any, args).output) if cast(Any, args).output else input_dir
+            )
 
             # Find files
             extensions = [ext.strip() for ext in cast(Any, args).extensions.split(",")]
@@ -732,28 +808,32 @@ def handle_workflow_command(args: argparse.Namespace) -> int:  # pylint: disable
 
             if not files:
                 logger.error("No supported files found")
-                return 1
+            else:
+                results = workflow.batch_process(
+                    files,
+                    output_dir,
+                    src_lang=cast(Any, args).src_lang,
+                    target_lang=cast(Any, args).target_lang,
+                    max_segment_length=cast(Any, args).max_segment_length,
+                    both=cast(Any, args).both,
+                    resume=cast(Any, args).resume,
+                    postprocess_operations=postprocess_ops,
+                )
 
-            results = workflow.batch_process(
-                files,
-                output_dir,
-                src_lang=cast(Any, args).src_lang,
-                target_lang=cast(Any, args).target_lang,
-                max_segment_length=cast(Any, args).max_segment_length,
-                both=cast(Any, args).both,
-                resume=cast(Any, args).resume,
-                postprocess_operations=postprocess_ops,
-            )
-
-            # Summary
-            successful = sum(1 for r in results.values() if r.get("status") == "completed")
-            print(f"\nWorkflow completed: {successful}/{len(files)} successful")
-
-            return 0 if successful > 0 else 1
+                # Summary
+                successful = sum(
+                    1 for r in results.values() if r.get("status") == "completed"
+                )
+                print(f"\nWorkflow completed: {successful}/{len(files)} successful")
+                result_code = 0 if successful > 0 else 1
 
         # Single file processing
         input_path = Path(cast(Any, args).input)
-        output_path = Path(cast(Any, args).output) if cast(Any, args).output else input_path.with_suffix(".srt")
+        output_path = (
+            Path(cast(Any, args).output)
+            if cast(Any, args).output
+            else input_path.with_suffix(".srt")
+        )
 
         def progress_callback(message: str, progress: float) -> None:
             percent = int(progress * 100)
@@ -772,6 +852,9 @@ def handle_workflow_command(args: argparse.Namespace) -> int:  # pylint: disable
                 progress_callback=progress_callback,
                 postprocess_operations=postprocess_ops,
             )
+            print(f"\nWorkflow completed: {result['output_path']}")
+            print(f"Total time: {result['total_time']:.2f} seconds")
+            result_code = 0
         elif is_subtitle_file(input_path):
             # Translation-only workflow
             result = workflow.translate_existing_subtitles(
@@ -781,35 +864,36 @@ def handle_workflow_command(args: argparse.Namespace) -> int:  # pylint: disable
                 target_lang=cast(Any, args).target_lang,
                 both=cast(Any, args).both,
             )
+            print(f"\nWorkflow completed: {result['output_path']}")
+            print(f"Total time: {result['total_time']:.2f} seconds")
+            result_code = 0
         else:
             logger.error("Unsupported file type: %s", input_path)
-            return 1
-
-        print(f"\nWorkflow completed: {result['output_path']}")
-        print(f"Total time: {result['total_time']:.2f} seconds")
-
-        return 0
 
     except WorkflowError as e:
         logger.error("Workflow error: %s", e)
-        return 1
+        result_code = 1
     except (OSError, IOError) as e:
         logger.error("File system error: %s", e)
-        return 1
+        result_code = 1
     except KeyboardInterrupt:
         logger.info("Workflow interrupted by user")
-        return 130
+        result_code = 130
     except Exception as e:
         logger.error("Unexpected error: %s", e)
-        return 1
+        result_code = 1
+
+    return result_code
 
 
-def main(args: Optional[List[str]] = None) -> int:  # pylint: disable=too-many-return-statements
+def main(args: Optional[List[str]] = None) -> int:
     """Main entry point for the CLI."""
     if args is None:
         args = sys.argv[1:]
 
+    result_code = 1  # Default error code
     parsed_args = None
+
     try:
         parser = create_parser()
         parsed_args = parser.parse_args(args)
@@ -830,32 +914,34 @@ def main(args: Optional[List[str]] = None) -> int:  # pylint: disable=too-many-r
 
         # Dispatch to command handlers
         if parsed_args.command == "transcribe":
-            return handle_transcribe_command(parsed_args)
-        if parsed_args.command == "translate":
-            return handle_translate_command(parsed_args)
-        if parsed_args.command == "encode":
-            return handle_encode_command(parsed_args)
-        if parsed_args.command == "workflow":
-            return handle_workflow_command(parsed_args)
-
-        parser.print_help()
-        return 0
+            result_code = handle_transcribe_command(parsed_args)
+        elif parsed_args.command == "translate":
+            result_code = handle_translate_command(parsed_args)
+        elif parsed_args.command == "encode":
+            result_code = handle_encode_command(parsed_args)
+        elif parsed_args.command == "workflow":
+            result_code = handle_workflow_command(parsed_args)
+        else:
+            parser.print_help()
+            result_code = 0
 
     except KeyboardInterrupt:
         print("\nOperation cancelled by user")
-        return 130
+        result_code = 130
     except argparse.ArgumentError:
         # Argument parsing errors
-        return 2
+        result_code = 2
     except (OSError, IOError) as e:
         logger.error("System error: %s", e)
-        return 1
+        result_code = 1
     except Exception as e:
         logger.error("Unexpected error: %s", e)
         # Print traceback in verbose mode if parsed_args is available
-        if parsed_args and getattr(parsed_args, 'verbose', False):
+        if parsed_args and getattr(parsed_args, "verbose", False):
             traceback.print_exc()
-        return 1
+        result_code = 1
+
+    return result_code
 
 
 if __name__ == "__main__":

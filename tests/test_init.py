@@ -11,9 +11,9 @@ class TestMainInit:
         """Test that version information is available."""
         import subtitletools
 
-        assert hasattr(subtitletools, '__version__')
-        assert hasattr(subtitletools, '__author__')
-        assert hasattr(subtitletools, '__email__')
+        assert hasattr(subtitletools, "__version__")
+        assert hasattr(subtitletools, "__author__")
+        assert hasattr(subtitletools, "__email__")
         assert subtitletools.__version__ == "1.0.0"
         assert subtitletools.__author__ == "tboy1337"
 
@@ -22,18 +22,18 @@ class TestMainInit:
         import subtitletools
 
         # Check that classes are imported successfully
-        assert hasattr(subtitletools, 'SubWhisperTranscriber')
-        assert hasattr(subtitletools, 'SubtitleTranslator')
-        assert hasattr(subtitletools, 'SubtitleProcessor')
-        assert hasattr(subtitletools, 'SubtitleWorkflow')
+        assert hasattr(subtitletools, "SubWhisperTranscriber")
+        assert hasattr(subtitletools, "SubtitleTranslator")
+        assert hasattr(subtitletools, "SubtitleProcessor")
+        assert hasattr(subtitletools, "SubtitleWorkflow")
 
         # Check that they're in __all__
-        assert 'SubWhisperTranscriber' in subtitletools.__all__
-        assert 'SubtitleTranslator' in subtitletools.__all__
-        assert 'SubtitleProcessor' in subtitletools.__all__
-        assert 'SubtitleWorkflow' in subtitletools.__all__
+        assert "SubWhisperTranscriber" in subtitletools.__all__
+        assert "SubtitleTranslator" in subtitletools.__all__
+        assert "SubtitleProcessor" in subtitletools.__all__
+        assert "SubtitleWorkflow" in subtitletools.__all__
 
-    @patch('subtitletools.core.transcription.SubWhisperTranscriber')
+    @patch("subtitletools.core.transcription.SubWhisperTranscriber")
     def test_import_error_handling(self, mock_transcriber: Any) -> None:
         """Test that ImportError is handled gracefully."""
         # Make the import fail
@@ -41,15 +41,17 @@ class TestMainInit:
 
         # Reload the module to trigger the import error path
         import importlib
+
         import subtitletools
+
         importlib.reload(subtitletools)
 
         # Should still have basic attributes
-        assert hasattr(subtitletools, '__version__')
-        assert hasattr(subtitletools, '__author__')
+        assert hasattr(subtitletools, "__version__")
+        assert hasattr(subtitletools, "__author__")
 
         # But not the imported classes
-        basic_all = ['__version__', '__author__', '__email__']
+        basic_all = ["__version__", "__author__", "__email__"]
         for item in basic_all:
             assert item in subtitletools.__all__
 
@@ -60,10 +62,10 @@ class TestCoreInit:
     def test_core_init_imports(self) -> None:
         """Test core module imports."""
         from subtitletools.core import (
-            SubWhisperTranscriber,
-            SubtitleTranslator,
             SubtitleProcessor,
-            SubtitleWorkflow
+            SubtitleTranslator,
+            SubtitleWorkflow,
+            SubWhisperTranscriber,
         )
 
         # Should be able to import all classes
@@ -77,10 +79,10 @@ class TestCoreInit:
         from subtitletools import core
 
         expected_classes = [
-            'SubWhisperTranscriber',
-            'SubtitleTranslator',
-            'SubtitleProcessor',
-            'SubtitleWorkflow'
+            "SubWhisperTranscriber",
+            "SubtitleTranslator",
+            "SubtitleProcessor",
+            "SubtitleWorkflow",
         ]
 
         for class_name in expected_classes:
@@ -93,10 +95,10 @@ class TestUtilsInit:
     def test_utils_init_imports(self) -> None:
         """Test utils module imports."""
         from subtitletools.utils import (
-            extract_audio,
+            apply_subtitle_edit_postprocess,
             detect_encoding,
+            extract_audio,
             setup_logging,
-            apply_subtitle_edit_postprocess
         )
 
         # Should be able to import all functions
@@ -110,10 +112,10 @@ class TestUtilsInit:
         from subtitletools import utils
 
         expected_functions = [
-            'extract_audio',
-            'detect_encoding',
-            'setup_logging',
-            'apply_subtitle_edit_postprocess'
+            "extract_audio",
+            "detect_encoding",
+            "setup_logging",
+            "apply_subtitle_edit_postprocess",
         ]
 
         for func_name in expected_functions:
@@ -126,10 +128,10 @@ class TestConfigInit:
     def test_config_init_imports(self) -> None:
         """Test config module imports."""
         from subtitletools.config import (
+            DEFAULT_ENCODING,
+            DEFAULT_WHISPER_MODEL,
             get_config,
             set_config,
-            DEFAULT_ENCODING,
-            DEFAULT_WHISPER_MODEL
         )
 
         # Should be able to import all functions and constants
@@ -143,11 +145,11 @@ class TestConfigInit:
         from subtitletools import config
 
         expected_items = [
-            'get_config',
-            'set_config',
-            'DEFAULT_ENCODING',
-            'DEFAULT_WHISPER_MODEL',
-            'SUPPORTED_VIDEO_EXTENSIONS'
+            "get_config",
+            "set_config",
+            "DEFAULT_ENCODING",
+            "DEFAULT_WHISPER_MODEL",
+            "SUPPORTED_VIDEO_EXTENSIONS",
         ]
 
         for item_name in expected_items:

@@ -6,7 +6,7 @@ import sys
 import threading
 from datetime import timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Any, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 torch_module: Optional[object] = None
 try:
@@ -15,9 +15,9 @@ except ImportError:
     torch_module = None
 
 from ..config.settings import (
-    SUPPORTED_VIDEO_EXTENSIONS,
     SUPPORTED_AUDIO_EXTENSIONS,
     SUPPORTED_SUBTITLE_FORMATS,
+    SUPPORTED_VIDEO_EXTENSIONS,
 )
 
 

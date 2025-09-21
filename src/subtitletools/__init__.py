@@ -30,13 +30,20 @@ __all__: List[str] = [
 
 # Import main functionality for convenience
 try:
+    from .core.subtitle import SubtitleProcessor
     from .core.transcription import SubWhisperTranscriber
     from .core.translation import SubtitleTranslator
-    from .core.subtitle import SubtitleProcessor
     from .core.workflow import SubtitleWorkflow
 
     # Main package exports
-    __all__.extend(["SubWhisperTranscriber", "SubtitleTranslator", "SubtitleProcessor", "SubtitleWorkflow"])
+    __all__.extend(
+        [
+            "SubWhisperTranscriber",
+            "SubtitleTranslator",
+            "SubtitleProcessor",
+            "SubtitleWorkflow",
+        ]
+    )
 except ImportError:
     # Allow partial imports during development/testing
     pass

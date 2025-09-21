@@ -10,8 +10,8 @@ import srt
 
 from subtitletools.utils.format_converter import (
     FormatConverter,
-    convert_subtitle_format,
     batch_convert_subtitle_format,
+    convert_subtitle_format,
     get_supported_formats,
 )
 
@@ -24,19 +24,19 @@ def sample_subtitles() -> list[srt.Subtitle]:
             index=1,
             start=timedelta(seconds=0),
             end=timedelta(seconds=2),
-            content="Hello, world!"
+            content="Hello, world!",
         ),
         srt.Subtitle(
             index=2,
             start=timedelta(seconds=3),
             end=timedelta(seconds=5),
-            content="This is a test\nwith multiple lines."
+            content="This is a test\nwith multiple lines.",
         ),
         srt.Subtitle(
             index=3,
             start=timedelta(seconds=6),
             end=timedelta(seconds=8),
-            content="Final subtitle."
+            content="Final subtitle.",
         ),
     ]
 
@@ -44,7 +44,7 @@ def sample_subtitles() -> list[srt.Subtitle]:
 @pytest.fixture
 def temp_srt_file(sample_subtitles: list[srt.Subtitle]) -> Generator[Path, None, None]:
     """Create a temporary SRT file."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.srt', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".srt", delete=False) as f:
         f.write(srt.compose(sample_subtitles))
         temp_path = Path(f.name)
 
@@ -61,28 +61,30 @@ class TestFormatConverter:
     def test_init(self) -> None:
         """Test initialization."""
         converter = FormatConverter()
-        assert 'srt' in converter.supported_formats
-        assert 'vtt' in converter.supported_formats
-        assert 'ass' in converter.supported_formats
+        assert "srt" in converter.supported_formats
+        assert "vtt" in converter.supported_formats
+        assert "ass" in converter.supported_formats
 
     def test_convert_subtitle_format_srt_to_vtt(self, temp_srt_file: Path) -> None:
         """Test converting SRT to VTT."""
         converter = FormatConverter()
 
-        output_file = temp_srt_file.with_suffix('.vtt')
+        output_file = temp_srt_file.with_suffix(".vtt")
 
         try:
-            success = converter.convert_subtitle_format(temp_srt_file, 'vtt', output_file)
+            success = converter.convert_subtitle_format(
+                temp_srt_file, "vtt", output_file
+            )
             assert success
             assert output_file.exists()
 
             # Check VTT content
-            with open(output_file, 'r', encoding='utf-8') as f:
+            with open(output_file, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            assert content.startswith('WEBVTT')
-            assert '00:00:00.000 --> 00:00:02.000' in content
-            assert 'Hello, world!' in content
+            assert content.startswith("WEBVTT")
+            assert "00:00:00.000 --> 00:00:02.000" in content
+            assert "Hello, world!" in content
 
         finally:
             if output_file.exists():
@@ -92,36 +94,40 @@ class TestFormatConverter:
         """Test converting SRT to ASS."""
         converter = FormatConverter()
 
-        output_file = temp_srt_file.with_suffix('.ass')
+        output_file = temp_srt_file.with_suffix(".ass")
 
         try:
-            success = converter.convert_subtitle_format(temp_srt_file, 'ass', output_file)
+            success = converter.convert_subtitle_format(
+                temp_srt_file, "ass", output_file
+            )
             assert success
             assert output_file.exists()
 
             # Check ASS content
-            with open(output_file, 'r', encoding='utf-8') as f:
+            with open(output_file, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            assert '[Script Info]' in content
-            assert '[V4+ Styles]' in content
-            assert '[Events]' in content
-            assert 'Dialogue:' in content
-            assert 'Hello, world!' in content
+            assert "[Script Info]" in content
+            assert "[V4+ Styles]" in content
+            assert "[Events]" in content
+            assert "Dialogue:" in content
+            assert "Hello, world!" in content
 
         finally:
             if output_file.exists():
                 output_file.unlink()
 
-    def test_convert_subtitle_format_auto_output_file(self, temp_srt_file: Path) -> None:
+    def test_convert_subtitle_format_auto_output_file(
+        self, temp_srt_file: Path
+    ) -> None:
         """Test conversion with auto-generated output filename."""
         converter = FormatConverter()
 
-        success = converter.convert_subtitle_format(temp_srt_file, 'vtt')
+        success = converter.convert_subtitle_format(temp_srt_file, "vtt")
         assert success
 
         # Should create .vtt file with same base name
-        vtt_file = temp_srt_file.with_suffix('.vtt')
+        vtt_file = temp_srt_file.with_suffix(".vtt")
         try:
             assert vtt_file.exists()
 
@@ -133,14 +139,14 @@ class TestFormatConverter:
         """Test converting nonexistent file."""
         converter = FormatConverter()
 
-        success = converter.convert_subtitle_format('nonexistent.srt', 'vtt')
+        success = converter.convert_subtitle_format("nonexistent.srt", "vtt")
         assert not success
 
     def test_convert_unsupported_format(self, temp_srt_file: Path) -> None:
         """Test converting to unsupported format."""
         converter = FormatConverter()
 
-        success = converter.convert_subtitle_format(temp_srt_file, 'unsupported')
+        success = converter.convert_subtitle_format(temp_srt_file, "unsupported")
         assert not success
 
     def test_read_subtitle_file_srt(self, temp_srt_file: Path) -> None:
@@ -195,7 +201,10 @@ class TestFormatConverter:
         result = converter._to_srt(sample_subtitles)
 
         assert "1\n00:00:00,000 --> 00:00:02,000\nHello, world!" in result
-        assert "2\n00:00:03,000 --> 00:00:05,000\nThis is a test\nwith multiple lines." in result
+        assert (
+            "2\n00:00:03,000 --> 00:00:05,000\nThis is a test\nwith multiple lines."
+            in result
+        )
 
     def test_to_vtt(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test converting to VTT format."""
@@ -203,9 +212,9 @@ class TestFormatConverter:
 
         result = converter._to_vtt(sample_subtitles)
 
-        assert result.startswith('WEBVTT')
-        assert '00:00:00.000 --> 00:00:02.000' in result
-        assert 'Hello, world!' in result
+        assert result.startswith("WEBVTT")
+        assert "00:00:00.000 --> 00:00:02.000" in result
+        assert "Hello, world!" in result
 
     def test_to_ass(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test converting to ASS format."""
@@ -213,10 +222,12 @@ class TestFormatConverter:
 
         result = converter._to_ass(sample_subtitles)
 
-        assert '[Script Info]' in result
-        assert '[V4+ Styles]' in result
-        assert '[Events]' in result
-        assert 'Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,Hello, world!' in result
+        assert "[Script Info]" in result
+        assert "[V4+ Styles]" in result
+        assert "[Events]" in result
+        assert (
+            "Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,Hello, world!" in result
+        )
 
     def test_to_ssa(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test converting to SSA format."""
@@ -224,9 +235,9 @@ class TestFormatConverter:
 
         result = converter._to_ssa(sample_subtitles)
 
-        assert '[Script Info]' in result
-        assert 'ScriptType: v4.00' in result  # SSA version
-        assert '[V4 Styles]' in result        # SSA style section
+        assert "[Script Info]" in result
+        assert "ScriptType: v4.00" in result  # SSA version
+        assert "[V4 Styles]" in result  # SSA style section
 
     def test_to_sami(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test converting to SAMI format."""
@@ -234,11 +245,11 @@ class TestFormatConverter:
 
         result = converter._to_sami(sample_subtitles)
 
-        assert '<SAMI>' in result
-        assert '<HEAD>' in result
-        assert '<BODY>' in result
-        assert '<SYNC Start=0>' in result
-        assert 'Hello, world!' in result
+        assert "<SAMI>" in result
+        assert "<HEAD>" in result
+        assert "<BODY>" in result
+        assert "<SYNC Start=0>" in result
+        assert "Hello, world!" in result
 
 
 class TestVTTParsing:
@@ -353,10 +364,10 @@ class TestModuleFunctions:
 
     def test_convert_subtitle_format_function(self, temp_srt_file: Path) -> None:
         """Test convert_subtitle_format function."""
-        output_file = temp_srt_file.with_suffix('.vtt')
+        output_file = temp_srt_file.with_suffix(".vtt")
 
         try:
-            success = convert_subtitle_format(temp_srt_file, 'vtt', output_file)
+            success = convert_subtitle_format(temp_srt_file, "vtt", output_file)
             assert success
             assert output_file.exists()
 
@@ -367,20 +378,20 @@ class TestModuleFunctions:
     def test_batch_convert_subtitle_format_function(self, temp_srt_file: Path) -> None:
         """Test batch_convert_subtitle_format function."""
         # Create a second temp file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.srt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".srt", delete=False) as f:
             f.write("1\n00:00:00,000 --> 00:00:02,000\nTest subtitle\n\n")
             temp_path2 = Path(f.name)
 
         try:
             files = [temp_srt_file, temp_path2]
-            results = batch_convert_subtitle_format(files, 'vtt')
+            results = batch_convert_subtitle_format(files, "vtt")
 
             assert len(results) == 2
             assert all(results.values())  # All should succeed
 
             # Check that VTT files were created
             for file_path in files:
-                vtt_file = Path(file_path).with_suffix('.vtt')
+                vtt_file = Path(file_path).with_suffix(".vtt")
                 assert vtt_file.exists()
                 vtt_file.unlink()  # Cleanup
 
@@ -393,9 +404,9 @@ class TestModuleFunctions:
         formats = get_supported_formats()
 
         assert isinstance(formats, list)
-        assert 'srt' in formats
-        assert 'vtt' in formats
-        assert 'ass' in formats
+        assert "srt" in formats
+        assert "vtt" in formats
+        assert "ass" in formats
 
 
 class TestFormatConverterEdgeCases:
@@ -453,7 +464,7 @@ Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,Valid subtitle
 
     def test_read_empty_file(self) -> None:
         """Test reading empty file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.srt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".srt", delete=False) as f:
             f.write("")  # Empty file
             temp_path = Path(f.name)
 

@@ -11,26 +11,28 @@ __all__: List[str] = []
 # Import configuration for convenience
 try:
     from .settings import (
-        DEFAULT_WHISPER_MODEL,
         DEFAULT_ENCODING,
         DEFAULT_TIMEOUT,
-        SUPPORTED_VIDEO_EXTENSIONS,
+        DEFAULT_WHISPER_MODEL,
         SUPPORTED_AUDIO_EXTENSIONS,
         SUPPORTED_SUBTITLE_FORMATS,
+        SUPPORTED_VIDEO_EXTENSIONS,
         get_config,
         set_config,
     )
 
-    __all__.extend([
-        "DEFAULT_WHISPER_MODEL",
-        "DEFAULT_ENCODING",
-        "DEFAULT_TIMEOUT",
-        "SUPPORTED_VIDEO_EXTENSIONS",
-        "SUPPORTED_AUDIO_EXTENSIONS",
-        "SUPPORTED_SUBTITLE_FORMATS",
-        "get_config",
-        "set_config",
-    ])
+    __all__.extend(
+        [
+            "DEFAULT_WHISPER_MODEL",
+            "DEFAULT_ENCODING",
+            "DEFAULT_TIMEOUT",
+            "SUPPORTED_VIDEO_EXTENSIONS",
+            "SUPPORTED_AUDIO_EXTENSIONS",
+            "SUPPORTED_SUBTITLE_FORMATS",
+            "get_config",
+            "set_config",
+        ]
+    )
 except ImportError:
     # Allow partial imports during development
     pass

@@ -64,7 +64,7 @@ def find_ffmpeg() -> Optional[str]:
         else:
             check_cmd = ["which", "ffmpeg"]
 
-        logger.debug("Checking PATH for FFmpeg using command: %s", ' '.join(check_cmd))
+        logger.debug("Checking PATH for FFmpeg using command: %s", " ".join(check_cmd))
         result: CompletedProcess[str] = subprocess.run(
             check_cmd,
             stdout=subprocess.PIPE,
@@ -94,7 +94,7 @@ def find_ffmpeg() -> Optional[str]:
                     "FFmpeg found at location %d/%d: %s",
                     i,
                     len(ffmpeg_locations),
-                    location
+                    location,
                 )
                 return location
 
@@ -102,12 +102,14 @@ def find_ffmpeg() -> Optional[str]:
                 "FFmpeg not found at location %d/%d: %s",
                 i,
                 len(ffmpeg_locations),
-                location
+                location,
             )
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Error checking FFmpeg location %s: %s", location, e)
         except Exception as e:
-            logger.debug("Unexpected error checking FFmpeg location %s: %s", location, e)
+            logger.debug(
+                "Unexpected error checking FFmpeg location %s: %s", location, e
+            )
 
     # If we get here, we couldn't find ffmpeg
     logger.error("FFmpeg executable not found in any known locations")
@@ -117,7 +119,7 @@ def find_ffmpeg() -> Optional[str]:
 def extract_audio(
     video_path: Union[str, Path],
     output_path: Optional[Union[str, Path]] = None,
-    temp_dir: Optional[str] = None
+    temp_dir: Optional[str] = None,
 ) -> str:
     """Extract audio from video file using ffmpeg with comprehensive error handling.
 
@@ -190,7 +192,7 @@ def extract_audio(
             "-y",
         ]
 
-        logger.info("Executing FFmpeg command: %s", ' '.join(command))
+        logger.info("Executing FFmpeg command: %s", " ".join(command))
         start_time = time.time()
 
         result: CompletedProcess[str] = subprocess.run(
@@ -210,9 +212,7 @@ def extract_audio(
                 result.stderr.strip() if result.stderr else "Unknown FFmpeg error"
             )
             logger.error(
-                "FFmpeg failed with return code %d: %s",
-                result.returncode,
-                error_msg
+                "FFmpeg failed with return code %d: %s", result.returncode, error_msg
             )
             raise RuntimeError(f"FFmpeg error (code {result.returncode}): {error_msg}")
 
@@ -227,13 +227,13 @@ def extract_audio(
         if file_size < 1000:  # Less than 1KB is suspicious
             logger.warning(
                 "Extracted audio file is very small (%d bytes), may indicate extraction issues",
-                file_size
+                file_size,
             )
         else:
             logger.info(
                 "Successfully extracted audio file (%d bytes): %s",
                 file_size,
-                output_path
+                output_path,
             )
 
         return str(output_path)
@@ -264,7 +264,9 @@ def cleanup_temp_dir() -> None:
         except (OSError, IOError) as e:
             logger.error("Failed to clean up temporary directory %s: %s", _TEMP_DIR, e)
         except Exception as e:
-            logger.error("Unexpected error cleaning up temporary directory %s: %s", _TEMP_DIR, e)
+            logger.error(
+                "Unexpected error cleaning up temporary directory %s: %s", _TEMP_DIR, e
+            )
 
 
 def get_audio_duration(audio_path: Union[str, Path]) -> Optional[float]:
@@ -284,10 +286,12 @@ def get_audio_duration(audio_path: Union[str, Path]) -> Optional[float]:
 
         command = [
             ffprobe_path,
-            "-v", "quiet",
-            "-print_format", "json",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
             "-show_format",
-            str(audio_path)
+            str(audio_path),
         ]
 
         result = subprocess.run(

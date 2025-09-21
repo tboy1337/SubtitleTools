@@ -24,33 +24,35 @@ def sample_subtitles() -> list[srt.Subtitle]:
             index=1,
             start=timedelta(seconds=0),
             end=timedelta(seconds=2),
-            content="Hello, world!"
+            content="Hello, world!",
         ),
         srt.Subtitle(
             index=2,
             start=timedelta(seconds=1.5),  # Overlapping with previous
-            end=timedelta(seconds=3),    # Very short display time
-            content="This   has   extra  spaces."
+            end=timedelta(seconds=3),  # Very short display time
+            content="This   has   extra  spaces.",
         ),
         srt.Subtitle(
             index=3,
             start=timedelta(seconds=4),  # Non-overlapping
-            end=timedelta(seconds=15),   # Very long display time
-            content="This is a very long line that should probably be split into multiple parts for better readability."
+            end=timedelta(seconds=15),  # Very long display time
+            content="This is a very long line that should probably be split into multiple parts for better readability.",
         ),
         srt.Subtitle(
             index=4,
             start=timedelta(seconds=16),
             end=timedelta(seconds=18),
-            content="[MUSIC PLAYING]\n(NARRATOR): Wlien the liero arrived..."
+            content="[MUSIC PLAYING]\n(NARRATOR): Wlien the liero arrived...",
         ),
     ]
 
 
 @pytest.fixture
-def temp_subtitle_file(sample_subtitles: list[srt.Subtitle]) -> Generator[Path, None, None]:
+def temp_subtitle_file(
+    sample_subtitles: list[srt.Subtitle],
+) -> Generator[Path, None, None]:
     """Create a temporary subtitle file."""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.srt', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".srt", delete=False) as f:
         f.write(srt.compose(sample_subtitles))
         temp_path = Path(f.name)
 
@@ -82,7 +84,9 @@ class TestSubtitleFixer:
         # Check that overlapping time was fixed
         assert result[0].end < result[1].start
 
-    def test_fix_short_display_times(self, sample_subtitles: list[srt.Subtitle]) -> None:
+    def test_fix_short_display_times(
+        self, sample_subtitles: list[srt.Subtitle]
+    ) -> None:
         """Test fixing short display times."""
         fixer = SubtitleFixer()
 
@@ -129,7 +133,9 @@ class TestSubtitleFixer:
         # Check that spaces were fixed in subtitle 2
         assert "   " not in result[1].content
 
-    def test_remove_hearing_impaired(self, sample_subtitles: list[srt.Subtitle]) -> None:
+    def test_remove_hearing_impaired(
+        self, sample_subtitles: list[srt.Subtitle]
+    ) -> None:
         """Test removing hearing impaired text."""
         fixer = SubtitleFixer()
 
@@ -154,7 +160,7 @@ class TestSubtitleFixer:
 
         # Check that no line is too long
         for subtitle in result:
-            lines = subtitle.content.split('\n')
+            lines = subtitle.content.split("\n")
             for line in lines:
                 assert len(line) <= fixer.max_chars_per_line * 1.2  # Some tolerance
 
@@ -195,7 +201,7 @@ class TestApplySubtitleFixes:
         assert success
 
         # Check that file was processed
-        with open(temp_subtitle_file, 'r', encoding='utf-8') as f:
+        with open(temp_subtitle_file, "r", encoding="utf-8") as f:
             content = f.read()
 
         subtitles = list(srt.parse(content))
@@ -209,7 +215,7 @@ class TestApplySubtitleFixes:
 
     def test_unknown_operation(self, temp_subtitle_file: Path) -> None:
         """Test handling unknown operation."""
-        with patch('subtitletools.utils.subtitle_fixes.logger') as mock_logger:
+        with patch("subtitletools.utils.subtitle_fixes.logger") as mock_logger:
             success = apply_subtitle_fixes(temp_subtitle_file, ["unknown_operation"])
 
         # Should still succeed (just skip unknown operation)
@@ -223,20 +229,18 @@ class TestApplySubtitleFixes:
 
     def test_output_file_specified(self, temp_subtitle_file: Path) -> None:
         """Test with output file specified."""
-        with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as f:
             output_path = Path(f.name)
 
         try:
             success = apply_subtitle_fixes(
-                temp_subtitle_file,
-                ["fixcommonerrors"],
-                output_file=output_path
+                temp_subtitle_file, ["fixcommonerrors"], output_file=output_path
             )
             assert success
             assert output_path.exists()
 
             # Check content was written to output file
-            with open(output_path, 'r', encoding='utf-8') as f:
+            with open(output_path, "r", encoding="utf-8") as f:
                 content = f.read()
             assert "Hello, world!" in content
 
@@ -251,7 +255,7 @@ class TestBatchApplySubtitleFixes:
     def test_batch_processing(self, temp_subtitle_file: Path) -> None:
         """Test batch processing multiple files."""
         # Create a second temp file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.srt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".srt", delete=False) as f:
             f.write("1\n00:00:00,000 --> 00:00:02,000\nTest subtitle\n\n")
             temp_path2 = Path(f.name)
 
@@ -296,7 +300,7 @@ class TestSubtitleFixerEdgeCases:
                 index=1,
                 start=timedelta(seconds=0),
                 end=timedelta(seconds=2),
-                content=""
+                content="",
             )
         ]
 
@@ -313,7 +317,7 @@ class TestSubtitleFixerEdgeCases:
                 index=1,
                 start=timedelta(seconds=0),
                 end=timedelta(seconds=2),
-                content="   \n   "
+                content="   \n   ",
             )
         ]
 
@@ -371,7 +375,7 @@ class TestSubtitleFixerEdgeCases:
             index=1,
             start=timedelta(seconds=0),
             end=timedelta(seconds=2),
-            content="Short text"
+            content="Short text",
         )
 
         result = fixer._split_subtitle(subtitle)

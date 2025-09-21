@@ -67,7 +67,7 @@ class TestTkGenerator:
         assert "var b = function" in js_code
         assert "var tk = function" in js_code
 
-    @patch('execjs.compile')
+    @patch("execjs.compile")
     def test_generate_success(self, mock_compile: Mock) -> None:
         """Test successful token generation."""
         mock_ctx = Mock()
@@ -81,7 +81,7 @@ class TestTkGenerator:
         mock_compile.assert_called_once()
         mock_ctx.call.assert_called_once_with("tk", "Hello", "123.456")
 
-    @patch('execjs.compile')
+    @patch("execjs.compile")
     def test_generate_none_result(self, mock_compile: Mock) -> None:
         """Test token generation with None result."""
         mock_ctx = Mock()
@@ -93,7 +93,7 @@ class TestTkGenerator:
 
         assert result == "0"
 
-    @patch('execjs.compile')
+    @patch("execjs.compile")
     def test_generate_exception(self, mock_compile: Mock) -> None:
         """Test token generation with exception."""
         mock_compile.side_effect = Exception("JS error")
@@ -141,7 +141,10 @@ class TestGoogleTranslator:
         # Should increase with retry count
         assert backoff_1 > backoff_0
         # Should be capped at max_backoff
-        assert backoff_large <= translator.max_backoff + translator.max_backoff * translator.jitter
+        assert (
+            backoff_large
+            <= translator.max_backoff + translator.max_backoff * translator.jitter
+        )
 
     def test_translate_empty_text(self) -> None:
         """Test translation of empty text."""
@@ -149,14 +152,12 @@ class TestGoogleTranslator:
         result = translator.translate("   ", "en", "es")
         assert result == "   "
 
-    @patch('requests.post')
+    @patch("requests.post")
     def test_translate_with_api_success(self, mock_post: Mock) -> None:
         """Test successful API translation."""
         mock_response = Mock()
         mock_response.json.return_value = {
-            "data": {
-                "translations": [{"translatedText": "Hola mundo"}]
-            }
+            "data": {"translations": [{"translatedText": "Hola mundo"}]}
         }
         mock_post.return_value = mock_response
 
@@ -166,7 +167,7 @@ class TestGoogleTranslator:
         assert result == "Hola mundo"
         mock_post.assert_called_once()
 
-    @patch('requests.post')
+    @patch("requests.post")
     def test_translate_with_api_invalid_response(self, mock_post: Mock) -> None:
         """Test API translation with invalid response."""
         mock_response = Mock()
@@ -178,7 +179,7 @@ class TestGoogleTranslator:
         with pytest.raises(TranslationError, match="Invalid API response format"):
             translator.translate("Hello", "en", "es")
 
-    @patch('requests.post')
+    @patch("requests.post")
     def test_translate_with_api_request_exception(self, mock_post: Mock) -> None:
         """Test API translation with request exception."""
         mock_post.side_effect = requests.RequestException("Connection error")
@@ -196,7 +197,7 @@ class TestGoogleTranslator:
         with pytest.raises(TranslationError, match="Text too long for web interface"):
             translator.translate(long_text, "en", "es")
 
-    @patch('subtitletools.core.translation.GoogleTranslator._make_request_with_retry')
+    @patch("subtitletools.core.translation.GoogleTranslator._make_request_with_retry")
     def test_translate_with_web_success(self, mock_request: Mock) -> None:
         """Test successful web translation."""
         mock_response = json.dumps([[["Hola mundo", "Hello world", None, None, 10]]])
@@ -207,10 +208,12 @@ class TestGoogleTranslator:
 
         assert result == "Hola mundo"
 
-    @patch('subtitletools.core.translation.GoogleTranslator._make_request_with_retry')
+    @patch("subtitletools.core.translation.GoogleTranslator._make_request_with_retry")
     def test_translate_with_web_multiline(self, mock_request: Mock) -> None:
         """Test web translation with multiline text."""
-        mock_response = json.dumps([[["Hola", "Hello", None, None, 10], ["mundo", "world", None, None, 10]]])
+        mock_response = json.dumps(
+            [[["Hola", "Hello", None, None, 10], ["mundo", "world", None, None, 10]]]
+        )
         mock_request.return_value = mock_response
 
         translator = GoogleTranslator()
@@ -218,7 +221,7 @@ class TestGoogleTranslator:
 
         assert result == "Hola\nmundo"
 
-    @patch('subtitletools.core.translation.GoogleTranslator._make_request_with_retry')
+    @patch("subtitletools.core.translation.GoogleTranslator._make_request_with_retry")
     def test_translate_with_web_empty_response(self, mock_request: Mock) -> None:
         """Test web translation with empty response."""
         mock_request.return_value = json.dumps([])
@@ -228,17 +231,19 @@ class TestGoogleTranslator:
         with pytest.raises(TranslationError, match="Empty translation response"):
             translator.translate("Hello", "en", "es")
 
-    @patch('subtitletools.core.translation.GoogleTranslator._make_request_with_retry')
+    @patch("subtitletools.core.translation.GoogleTranslator._make_request_with_retry")
     def test_translate_with_web_json_error(self, mock_request: Mock) -> None:
         """Test web translation with JSON decode error."""
         mock_request.return_value = "invalid json"
 
         translator = GoogleTranslator()
 
-        with pytest.raises(TranslationError, match="Failed to parse translation response"):
+        with pytest.raises(
+            TranslationError, match="Failed to parse translation response"
+        ):
             translator.translate("Hello", "en", "es")
 
-    @patch('urllib.request.urlopen')
+    @patch("urllib.request.urlopen")
     def test_make_request_success(self, mock_urlopen: Mock) -> None:
         """Test successful HTTP request."""
         mock_response = Mock()
@@ -252,7 +257,7 @@ class TestGoogleTranslator:
 
         assert result == "Success"
 
-    @patch('urllib.request.urlopen')
+    @patch("urllib.request.urlopen")
     def test_make_request_rate_limit_retry(self, mock_urlopen: Mock) -> None:
         """Test HTTP request with rate limiting."""
         # First call raises 429, second succeeds
@@ -264,40 +269,40 @@ class TestGoogleTranslator:
 
         mock_urlopen.side_effect = [error, mock_response]
 
-        with patch('time.sleep'):  # Mock sleep to speed up test
+        with patch("time.sleep"):  # Mock sleep to speed up test
             translator = GoogleTranslator()
             translator.max_retries = 2  # Reduce retries for faster test
             result = translator._make_request_with_retry("http://example.com")
 
         assert result == "Success"
 
-    @patch('urllib.request.urlopen')
+    @patch("urllib.request.urlopen")
     def test_make_request_rate_limit_exceeded(self, mock_urlopen: Mock) -> None:
         """Test HTTP request with rate limit exceeded."""
         error = urllib.error.HTTPError("", 429, "Too Many Requests", {}, None)
         mock_urlopen.side_effect = error
 
-        with patch('time.sleep'):  # Mock sleep to speed up test
+        with patch("time.sleep"):  # Mock sleep to speed up test
             translator = GoogleTranslator()
             translator.max_retries = 2
 
             with pytest.raises(RateLimitError, match="Rate limit exceeded after"):
                 translator._make_request_with_retry("http://example.com")
 
-    @patch('urllib.request.urlopen')
+    @patch("urllib.request.urlopen")
     def test_make_request_server_error(self, mock_urlopen: Mock) -> None:
         """Test HTTP request with server error."""
         error = urllib.error.HTTPError("", 500, "Internal Server Error", {}, None)
         mock_urlopen.side_effect = error
 
-        with patch('time.sleep'):  # Mock sleep to speed up test
+        with patch("time.sleep"):  # Mock sleep to speed up test
             translator = GoogleTranslator()
             translator.max_retries = 1
 
             with pytest.raises(TranslationError, match="Server error 500"):
                 translator._make_request_with_retry("http://example.com")
 
-    @patch('urllib.request.urlopen')
+    @patch("urllib.request.urlopen")
     def test_make_request_http_error(self, mock_urlopen: Mock) -> None:
         """Test HTTP request with other HTTP error."""
         error = urllib.error.HTTPError("", 404, "Not Found", {}, None)
@@ -308,13 +313,13 @@ class TestGoogleTranslator:
         with pytest.raises(TranslationError, match="HTTP error 404"):
             translator._make_request_with_retry("http://example.com")
 
-    @patch('urllib.request.urlopen')
+    @patch("urllib.request.urlopen")
     def test_make_request_url_error(self, mock_urlopen: Mock) -> None:
         """Test HTTP request with URL error."""
         error = urllib.error.URLError("Connection failed")
         mock_urlopen.side_effect = error
 
-        with patch('time.sleep'):  # Mock sleep to speed up test
+        with patch("time.sleep"):  # Mock sleep to speed up test
             translator = GoogleTranslator()
             translator.max_retries = 1
 
@@ -327,7 +332,7 @@ class TestGoogleTranslator:
         result = translator.translate_lines([], "en", "es")
         assert result == ""
 
-    @patch('subtitletools.core.translation.GoogleTranslator.translate')
+    @patch("subtitletools.core.translation.GoogleTranslator.translate")
     def test_translate_lines_success(self, mock_translate: Mock) -> None:
         """Test successful line translation."""
         mock_translate.return_value = "Hola\nmundo"
@@ -338,15 +343,20 @@ class TestGoogleTranslator:
         assert result == "Hola\nmundo"
         mock_translate.assert_called_once_with("Hello\nworld", "en", "es")
 
-    @patch('subtitletools.core.translation.GoogleTranslator.translate')
-    @patch('time.sleep')
-    def test_translate_lines_chunked(self, mock_sleep: Mock, mock_translate: Mock) -> None:
+    @patch("subtitletools.core.translation.GoogleTranslator.translate")
+    @patch("time.sleep")
+    def test_translate_lines_chunked(
+        self, mock_sleep: Mock, mock_translate: Mock
+    ) -> None:
         """Test line translation with chunking."""
         # Create text that exceeds max_limited
         translator = GoogleTranslator()
         translator.max_limited = 10  # Small limit for testing
 
-        long_lines = ["This is a very long line that exceeds the limit", "Another long line"]
+        long_lines = [
+            "This is a very long line that exceeds the limit",
+            "Another long line",
+        ]
         mock_translate.side_effect = ["Línea larga 1", "Línea larga 2"]
 
         result = translator.translate_lines(long_lines, "en", "es")
@@ -388,7 +398,7 @@ class TestSubtitleTranslator:
         result = translator.translate_text("   ")
         assert result == "   "
 
-    @patch('subtitletools.core.translation.GoogleTranslator.translate')
+    @patch("subtitletools.core.translation.GoogleTranslator.translate")
     def test_translate_text_success(self, mock_translate: Mock) -> None:
         """Test successful text translation."""
         mock_translate.return_value = "Hola mundo"
@@ -399,7 +409,7 @@ class TestSubtitleTranslator:
         assert result == "Hola mundo"
         mock_translate.assert_called_once_with("Hello world", "en", "es")
 
-    @patch('subtitletools.core.translation.GoogleTranslator.translate')
+    @patch("subtitletools.core.translation.GoogleTranslator.translate")
     def test_translate_text_with_progress(self, mock_translate: Mock) -> None:
         """Test text translation with progress callback."""
         mock_translate.return_value = "Hola mundo"
@@ -416,7 +426,7 @@ class TestSubtitleTranslator:
         assert progress_calls[0] == (0, 1, "Translating...")
         assert progress_calls[1] == (1, 1, "Complete")
 
-    @patch('subtitletools.core.translation.GoogleTranslator.translate')
+    @patch("subtitletools.core.translation.GoogleTranslator.translate")
     def test_translate_text_exception(self, mock_translate: Mock) -> None:
         """Test text translation with exception."""
         mock_translate.side_effect = Exception("Translation failed")
@@ -432,7 +442,7 @@ class TestSubtitleTranslator:
         result = translator.translate_lines([])
         assert not result
 
-    @patch('subtitletools.core.translation.GoogleTranslator.translate_lines')
+    @patch("subtitletools.core.translation.GoogleTranslator.translate_lines")
     def test_translate_lines_success(self, mock_translate_lines: Mock) -> None:
         """Test successful lines translation."""
         mock_translate_lines.return_value = "Hola\nmundo"
@@ -443,7 +453,7 @@ class TestSubtitleTranslator:
         assert result == ["Hola", "mundo"]
         mock_translate_lines.assert_called_once()
 
-    @patch('subtitletools.core.translation.GoogleTranslator.translate_lines')
+    @patch("subtitletools.core.translation.GoogleTranslator.translate_lines")
     def test_translate_lines_with_empty_lines(self, mock_translate_lines: Mock) -> None:
         """Test lines translation with empty lines."""
         mock_translate_lines.return_value = "Hola\nmundo"
@@ -455,7 +465,7 @@ class TestSubtitleTranslator:
         assert len(result) == 3
         assert result[1] == ""
 
-    @patch('subtitletools.core.translation.GoogleTranslator.translate_lines')
+    @patch("subtitletools.core.translation.GoogleTranslator.translate_lines")
     def test_translate_lines_exception(self, mock_translate_lines: Mock) -> None:
         """Test lines translation with exception."""
         mock_translate_lines.side_effect = Exception("Translation failed")

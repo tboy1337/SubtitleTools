@@ -83,7 +83,7 @@ class TestSetupLogging:
 
     def test_setup_logging_with_file(self) -> None:
         """Test setup_logging with file handler."""
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.log') as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".log") as tmp:
             log_file = tmp.name
 
         try:
@@ -99,7 +99,7 @@ class TestSetupLogging:
 
             # Check file was created and has content
             assert Path(log_file).exists()
-            with open(log_file, 'r', encoding='utf-8') as f:
+            with open(log_file, "r", encoding="utf-8") as f:
                 content = f.read()
                 assert "Test message" in content
         finally:
@@ -116,7 +116,7 @@ class TestSetupLogging:
 
     def test_setup_logging_pathlib_path(self) -> None:
         """Test setup_logging with pathlib Path for log file."""
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.log') as tmp:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".log") as tmp:
             log_file = Path(tmp.name)
 
         try:
@@ -505,7 +505,7 @@ class TestGetSystemInfo:
     def test_get_system_info_with_torch(self) -> None:
         """Test system info with torch available."""
         # Mock torch_module directly in the common module
-        with patch('subtitletools.utils.common.torch_module') as mock_torch:
+        with patch("subtitletools.utils.common.torch_module") as mock_torch:
             mock_torch.__version__ = "1.12.0"
             mock_torch.cuda.is_available.return_value = True
 
@@ -517,13 +517,13 @@ class TestGetSystemInfo:
     def test_get_system_info_no_torch(self) -> None:
         """Test system info without torch (ImportError)."""
         # Mock torch_module as None to simulate ImportError
-        with patch('subtitletools.utils.common.torch_module', None):
+        with patch("subtitletools.utils.common.torch_module", None):
             info = get_system_info()
 
             assert info["torch_version"] == "Not installed"
             assert info["cuda_available"] is False
 
-    @patch('os.getcwd')
+    @patch("os.getcwd")
     def test_get_system_info_cwd_exception(self, mock_getcwd: Mock) -> None:
         """Test system info when getcwd raises an exception."""
         # This is more for completeness - the function doesn't handle exceptions

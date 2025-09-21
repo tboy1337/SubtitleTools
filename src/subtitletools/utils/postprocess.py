@@ -10,7 +10,13 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from .format_converter import convert_subtitle_format as native_convert_format, get_supported_formats, batch_convert_subtitle_format
+from .format_converter import (
+    batch_convert_subtitle_format,
+)
+from .format_converter import convert_subtitle_format as native_convert_format
+from .format_converter import (
+    get_supported_formats,
+)
 from .subtitle_fixes import apply_subtitle_fixes, batch_apply_subtitle_fixes
 
 logger = logging.getLogger(__name__)
@@ -47,19 +53,21 @@ def apply_subtitle_edit_postprocess(
             return False
 
         # Convert format if requested and different from current
-        if output_format and output_format.lower() not in ['subrip', 'srt']:
+        if output_format and output_format.lower() not in ["subrip", "srt"]:
             # Map format names to our converter format names
             format_mapping = {
-                'subrip': 'srt',
-                'ass': 'ass',
-                'ssa': 'ssa',
-                'vtt': 'vtt',
-                'webvtt': 'vtt',
-                'sami': 'sami',
-                'smi': 'sami'
+                "subrip": "srt",
+                "ass": "ass",
+                "ssa": "ssa",
+                "vtt": "vtt",
+                "webvtt": "vtt",
+                "sami": "sami",
+                "smi": "sami",
             }
 
-            target_format = format_mapping.get(output_format.lower(), output_format.lower())
+            target_format = format_mapping.get(
+                output_format.lower(), output_format.lower()
+            )
 
             if target_format in get_supported_formats():
                 convert_success = native_convert_format(subtitle_path, target_format)
@@ -136,7 +144,9 @@ def check_postprocess_available() -> bool:
     Returns:
         Always returns True since native implementation is always available
     """
-    logger.debug("Post-processing availability check - native implementation always available")
+    logger.debug(
+        "Post-processing availability check - native implementation always available"
+    )
     return True
 
 
@@ -147,7 +157,7 @@ def validate_postprocess_environment() -> Dict[str, bool]:
         Dictionary with validation results (always valid for native implementation)
     """
     checks = {
-            "postprocess_available": True,   # Native implementation always available
+        "postprocess_available": True,  # Native implementation always available
     }
 
     return checks
@@ -245,8 +255,7 @@ def apply_ocr_fixes(subtitle_file: Union[str, Path]) -> bool:
 
 
 def convert_subtitle_format(
-    subtitle_file: Union[str, Path],
-    output_format: str
+    subtitle_file: Union[str, Path], output_format: str
 ) -> bool:
     """Convert subtitle to a different format.
 
@@ -279,18 +288,25 @@ def batch_postprocess(
     results = batch_apply_subtitle_fixes(subtitle_files, operations)
 
     # Apply format conversion if requested
-    if output_format and output_format.lower() not in ['subrip', 'srt']:
+    if output_format and output_format.lower() not in ["subrip", "srt"]:
 
         # Only convert files that were successfully processed
         successful_files = [f for f, success in results.items() if success]
         if successful_files:
             # Convert to List[Union[str, Path]] to match function signature
-            successful_paths: List[Union[str, Path]] = [Path(f) for f in successful_files]
-            convert_results = batch_convert_subtitle_format(successful_paths, output_format)
+            successful_paths: List[Union[str, Path]] = [
+                Path(f) for f in successful_files
+            ]
+            convert_results = batch_convert_subtitle_format(
+                successful_paths, output_format
+            )
 
             # Update results with conversion status
             for file_path, convert_success in convert_results.items():
                 if not convert_success:
-                    logger.warning("Format conversion failed for %s, keeping original format", file_path)
+                    logger.warning(
+                        "Format conversion failed for %s, keeping original format",
+                        file_path,
+                    )
 
     return results

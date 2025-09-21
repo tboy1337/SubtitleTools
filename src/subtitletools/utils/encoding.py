@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from ..config.settings import SUPPORTED_ENCODINGS, LANGUAGE_ENCODINGS
+from ..config.settings import LANGUAGE_ENCODINGS, SUPPORTED_ENCODINGS
 
 logger = logging.getLogger(__name__)
 
@@ -157,8 +157,9 @@ def convert_to_multiple_encodings(
 
         # Skip if the target encoding matches the source and same file
         try:
-            if (target_encoding.lower() == source_encoding.lower()
-                and os.path.samefile(input_file, output_file)):
+            if target_encoding.lower() == source_encoding.lower() and os.path.samefile(
+                input_file, output_file
+            ):
                 logger.info(
                     "Skipping conversion to %s as it matches source encoding",
                     target_encoding,
@@ -230,7 +231,7 @@ def get_file_encoding_info(file_path: str) -> Dict[str, Union[str, int, bool, No
         "detected_encoding": None,
         "confidence": None,
         "file_size": None,
-        "readable": False
+        "readable": False,
     }
 
     if not os.path.exists(file_path):
@@ -243,7 +244,9 @@ def get_file_encoding_info(file_path: str) -> Dict[str, Union[str, int, bool, No
             info["detected_encoding"] = detected
             info["readable"] = True
             # Simple confidence based on successful detection
-            info["confidence"] = "high" if detected in ["utf-8", "utf-8-sig"] else "medium"
+            info["confidence"] = (
+                "high" if detected in ["utf-8", "utf-8-sig"] else "medium"
+            )
     except (OSError, UnicodeError, LookupError) as e:
         logger.debug("Error getting encoding info for %s: %s", file_path, e)
 

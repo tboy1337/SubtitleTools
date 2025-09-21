@@ -70,7 +70,9 @@ and formatting
 
 
 @pytest.fixture
-def sample_srt_file(temp_dir: Path, sample_srt_content: str) -> Path:  # pylint: disable=redefined-outer-name
+def sample_srt_file(
+    temp_dir: Path, sample_srt_content: str
+) -> Path:  # pylint: disable=redefined-outer-name
     """Create a sample SRT file for testing."""
     srt_file = temp_dir / "test.srt"
     srt_file.write_text(sample_srt_content, encoding="utf-8")
@@ -85,19 +87,19 @@ def sample_subtitles() -> list[srt.Subtitle]:
             index=1,
             start=timedelta(seconds=1),
             end=timedelta(seconds=3),
-            content="Hello world"
+            content="Hello world",
         ),
         srt.Subtitle(
             index=2,
             start=timedelta(seconds=4),
             end=timedelta(seconds=6),
-            content="This is a test subtitle"
+            content="This is a test subtitle",
         ),
         srt.Subtitle(
             index=3,
             start=timedelta(seconds=7),
             end=timedelta(seconds=10),
-            content="With multiple lines\nand formatting"
+            content="With multiple lines\nand formatting",
         ),
     ]
 
@@ -119,17 +121,11 @@ def mock_env_clean() -> Generator[None, None, None]:
 @pytest.fixture
 def mock_whisper_model() -> Any:
     """Mock Whisper model for testing."""
-    with patch('whisper.load_model') as mock_load:
+    with patch("whisper.load_model") as mock_load:
         mock_model = mock_load.return_value
         mock_model.transcribe.return_value = {
-            'text': 'Test transcription',
-            'segments': [
-                {
-                    'start': 0.0,
-                    'end': 3.0,
-                    'text': 'Test transcription'
-                }
-            ]
+            "text": "Test transcription",
+            "segments": [{"start": 0.0, "end": 3.0, "text": "Test transcription"}],
         }
         yield mock_model
 
@@ -137,10 +133,10 @@ def mock_whisper_model() -> Any:
 @pytest.fixture
 def mock_requests() -> Any:
     """Mock requests for translation testing."""
-    with patch('requests.Session') as mock_session:
+    with patch("requests.Session") as mock_session:
         mock_response = mock_session.return_value.get.return_value
         mock_response.status_code = 200
-        mock_response.text = 'mock response'
+        mock_response.text = "mock response"
         yield mock_session
 
 
@@ -156,7 +152,7 @@ def create_test_subtitles(count: int = 3) -> list[srt.Subtitle]:
             index=i,
             start=timedelta(seconds=i * 2),
             end=timedelta(seconds=i * 2 + 1),
-            content=f"Test subtitle {i}"
+            content=f"Test subtitle {i}",
         )
         subtitles.append(subtitle)
     return subtitles

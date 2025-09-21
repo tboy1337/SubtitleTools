@@ -6,7 +6,7 @@ using native Python implementations. It includes:
 - Fix common errors (overlapping times, short/long display times, etc.)
 - Remove hearing impaired text
 - Split long lines
-- Fix punctuation issues  
+- Fix punctuation issues
 - Apply OCR fixes
 - Format conversion
 
@@ -18,6 +18,7 @@ import logging
 import re
 from pathlib import Path
 from typing import Dict, List, Optional, Union
+
 import srt
 
 logger = logging.getLogger(__name__)
@@ -28,6 +29,7 @@ DEFAULT_MAX_CHARS_TOTAL = 84
 DEFAULT_MIN_DISPLAY_TIME_MS = 500
 DEFAULT_MAX_DISPLAY_TIME_MS = 7000
 DEFAULT_MIN_GAP_MS = 24
+
 
 class SubtitleFixer:
     """Main class for subtitle post-processing operations."""
@@ -50,38 +52,35 @@ class SubtitleFixer:
         # Common OCR misrecognitions (from SubtitleEdit)
         self.ocr_fixes = {
             # Letter/number confusions
-            r'\bl\b': 'I',  # Standalone l -> I
-            r'\b0\b': 'O',  # Standalone 0 -> O (context dependent)
-            r'\bO\b': '0',  # Standalone O -> 0 (context dependent)
-
+            r"\bl\b": "I",  # Standalone l -> I
+            r"\b0\b": "O",  # Standalone 0 -> O (context dependent)
+            r"\bO\b": "0",  # Standalone O -> 0 (context dependent)
             # Common character replacements
-            r'rn': 'm',     # rn -> m
-            r'\|': 'l',     # | -> l
-            r'\bvv': 'w',   # vv -> w
-            r'\bW\b': 'VV', # W -> VV (sometimes)
-
+            r"rn": "m",  # rn -> m
+            r"\|": "l",  # | -> l
+            r"\bvv": "w",  # vv -> w
+            r"\bW\b": "VV",  # W -> VV (sometimes)
             # Punctuation fixes
-            r'\.\.\.': '…', # ... -> …
-            r"''": '"',     # '' -> "
-            r',,': ',',     # ,, -> ,
-            r';;': ';',     # ;; -> ;
-
+            r"\.\.\.": "…",  # ... -> …
+            r"''": '"',  # '' -> "
+            r",,": ",",  # ,, -> ,
+            r";;": ";",  # ;; -> ;
             # Space fixes
-            r'\s+': ' ',    # Multiple spaces -> single space
-            r'^\s+': '',    # Leading whitespace
-            r'\s+$': '',    # Trailing whitespace
+            r"\s+": " ",  # Multiple spaces -> single space
+            r"^\s+": "",  # Leading whitespace
+            r"\s+$": "",  # Trailing whitespace
         }
 
     def _init_hearing_impaired_patterns(self) -> None:
         """Initialize hearing impaired text removal patterns."""
         # Patterns for hearing impaired text (from SubtitleEdit)
         self.hi_patterns = {
-            'brackets': re.compile(r'\[.*?\]', re.DOTALL),
-            'parens': re.compile(r'\(.*?\)', re.DOTALL),
-            'braces': re.compile(r'\{.*?\}', re.DOTALL),
-            'question_marks': re.compile(r'\?.*?\?', re.DOTALL),
-            'colons': re.compile(r'^[A-Z][A-Z\s]+:', re.MULTILINE),
-            'all_caps': re.compile(r'^[A-Z\s]+$', re.MULTILINE),
+            "brackets": re.compile(r"\[.*?\]", re.DOTALL),
+            "parens": re.compile(r"\(.*?\)", re.DOTALL),
+            "braces": re.compile(r"\{.*?\}", re.DOTALL),
+            "question_marks": re.compile(r"\?.*?\?", re.DOTALL),
+            "colons": re.compile(r"^[A-Z][A-Z\s]+:", re.MULTILINE),
+            "all_caps": re.compile(r"^[A-Z\s]+$", re.MULTILINE),
         }
 
     def fix_common_errors(self, subtitles: List[srt.Subtitle]) -> List[srt.Subtitle]:
@@ -99,7 +98,9 @@ class SubtitleFixer:
         logger.info("Common error fixes completed")
         return subtitles
 
-    def _fix_overlapping_times(self, subtitles: List[srt.Subtitle]) -> List[srt.Subtitle]:
+    def _fix_overlapping_times(
+        self, subtitles: List[srt.Subtitle]
+    ) -> List[srt.Subtitle]:
         """Fix overlapping subtitle times."""
         fixed_count = 0
 
@@ -109,7 +110,9 @@ class SubtitleFixer:
 
             if current.end > next_sub.start:
                 # Overlap detected - adjust end time
-                current.end = next_sub.start - srt.timedelta(milliseconds=self.min_gap_ms)
+                current.end = next_sub.start - srt.timedelta(
+                    milliseconds=self.min_gap_ms
+                )
                 fixed_count += 1
 
         if fixed_count > 0:
@@ -117,7 +120,9 @@ class SubtitleFixer:
 
         return subtitles
 
-    def _fix_short_display_times(self, subtitles: List[srt.Subtitle]) -> List[srt.Subtitle]:
+    def _fix_short_display_times(
+        self, subtitles: List[srt.Subtitle]
+    ) -> List[srt.Subtitle]:
         """Fix subtitles with too short display times."""
         fixed_count = 0
         min_display_seconds = self.min_display_time_ms / 1000.0
@@ -127,8 +132,10 @@ class SubtitleFixer:
 
             if duration < min_display_seconds:
                 # Calculate optimal display time based on text length
-                text_length = len(subtitle.content.replace('\n', ''))
-                optimal_duration = max(min_display_seconds, text_length * 0.1)  # ~10 chars/second reading speed
+                text_length = len(subtitle.content.replace("\n", ""))
+                optimal_duration = max(
+                    min_display_seconds, text_length * 0.1
+                )  # ~10 chars/second reading speed
 
                 # Extend end time but don't overlap with next subtitle
                 new_end = subtitle.start + srt.timedelta(seconds=optimal_duration)
@@ -147,7 +154,9 @@ class SubtitleFixer:
 
         return subtitles
 
-    def _fix_long_display_times(self, subtitles: List[srt.Subtitle]) -> List[srt.Subtitle]:
+    def _fix_long_display_times(
+        self, subtitles: List[srt.Subtitle]
+    ) -> List[srt.Subtitle]:
         """Fix subtitles with too long display times."""
         fixed_count = 0
         max_display_seconds = self.max_display_time_ms / 1000.0
@@ -157,8 +166,10 @@ class SubtitleFixer:
 
             if duration > max_display_seconds:
                 # Calculate optimal display time based on text length
-                text_length = len(subtitle.content.replace('\n', ''))
-                optimal_duration = min(max_display_seconds, text_length * 0.08)  # ~12.5 chars/second
+                text_length = len(subtitle.content.replace("\n", ""))
+                optimal_duration = min(
+                    max_display_seconds, text_length * 0.08
+                )  # ~12.5 chars/second
 
                 subtitle.end = subtitle.start + srt.timedelta(seconds=optimal_duration)
                 fixed_count += 1
@@ -176,18 +187,18 @@ class SubtitleFixer:
             original_content = subtitle.content
 
             # Multiple spaces to single space
-            content = re.sub(r'\s+', ' ', subtitle.content)
+            content = re.sub(r"\s+", " ", subtitle.content)
 
             # Remove spaces before punctuation
-            content = re.sub(r'\s+([.!?:;,])', r'\1', content)
+            content = re.sub(r"\s+([.!?:;,])", r"\1", content)
 
             # Remove leading/trailing whitespace from lines
-            lines = content.split('\n')
+            lines = content.split("\n")
             lines = [line.strip() for line in lines]
-            content = '\n'.join(lines)
+            content = "\n".join(lines)
 
             # Remove empty lines
-            content = re.sub(r'\n+', '\n', content).strip()
+            content = re.sub(r"\n+", "\n", content).strip()
 
             if content != original_content:
                 subtitle.content = content
@@ -206,7 +217,7 @@ class SubtitleFixer:
             original_content = subtitle.content
 
             # Add space after punctuation if missing (but not at end of line)
-            content = re.sub(r'([.!?])([A-Za-z])', r'\1 \2', subtitle.content)
+            content = re.sub(r"([.!?])([A-Za-z])", r"\1 \2", subtitle.content)
 
             if content != original_content:
                 subtitle.content = content
@@ -217,7 +228,9 @@ class SubtitleFixer:
 
         return subtitles
 
-    def _fix_punctuation_spacing(self, subtitles: List[srt.Subtitle]) -> List[srt.Subtitle]:
+    def _fix_punctuation_spacing(
+        self, subtitles: List[srt.Subtitle]
+    ) -> List[srt.Subtitle]:
         """Fix punctuation spacing issues."""
         fixed_count = 0
 
@@ -226,14 +239,14 @@ class SubtitleFixer:
             content = subtitle.content
 
             # Fix ellipsis
-            content = re.sub(r'\.{3,}', '…', content)
+            content = re.sub(r"\.{3,}", "…", content)
 
             # Fix double punctuation
-            content = re.sub(r'([.!?])\1+', r'\1', content)
+            content = re.sub(r"([.!?])\1+", r"\1", content)
 
             # Fix quotation marks
             content = re.sub(r"''", '"', content)
-            content = re.sub(r'``', '"', content)
+            content = re.sub(r"``", '"', content)
 
             if content != original_content:
                 subtitle.content = content
@@ -244,7 +257,9 @@ class SubtitleFixer:
 
         return subtitles
 
-    def remove_hearing_impaired(self, subtitles: List[srt.Subtitle]) -> List[srt.Subtitle]:
+    def remove_hearing_impaired(
+        self, subtitles: List[srt.Subtitle]
+    ) -> List[srt.Subtitle]:
         """Remove hearing impaired text from subtitles."""
         logger.info("Removing hearing impaired text...")
 
@@ -256,26 +271,26 @@ class SubtitleFixer:
             original_content = content
 
             # Remove text in brackets, parentheses, etc.
-            content = self.hi_patterns['brackets'].sub('', content)
-            content = self.hi_patterns['parens'].sub('', content)
-            content = self.hi_patterns['braces'].sub('', content)
-            content = self.hi_patterns['question_marks'].sub('', content)
+            content = self.hi_patterns["brackets"].sub("", content)
+            content = self.hi_patterns["parens"].sub("", content)
+            content = self.hi_patterns["braces"].sub("", content)
+            content = self.hi_patterns["question_marks"].sub("", content)
 
             # Remove speaker names (ALL CAPS with colon)
-            content = self.hi_patterns['colons'].sub('', content)
+            content = self.hi_patterns["colons"].sub("", content)
 
             # Clean up resulting text
-            content = re.sub(r'\s+', ' ', content).strip()
-            content = re.sub(r'\n\s*\n', '\n', content).strip()
+            content = re.sub(r"\s+", " ", content).strip()
+            content = re.sub(r"\n\s*\n", "\n", content).strip()
 
             # Remove lines that are all caps (likely sound effects)
-            lines = content.split('\n')
+            lines = content.split("\n")
             clean_lines = []
             for line in lines:
                 line = line.strip()
-                if line and not self.hi_patterns['all_caps'].match(line):
+                if line and not self.hi_patterns["all_caps"].match(line):
                     clean_lines.append(line)
-            content = '\n'.join(clean_lines)
+            content = "\n".join(clean_lines)
 
             # Only keep subtitle if it has meaningful content after cleanup
             if content and not content.isspace():
@@ -297,11 +312,13 @@ class SubtitleFixer:
         split_count = 0
 
         for subtitle in subtitles:
-            lines = subtitle.content.split('\n')
+            lines = subtitle.content.split("\n")
 
             # Check if any line is too long
             needs_split = any(len(line) > self.max_chars_per_line for line in lines)
-            total_too_long = len(subtitle.content.replace('\n', '')) > self.max_chars_total
+            total_too_long = (
+                len(subtitle.content.replace("\n", "")) > self.max_chars_total
+            )
 
             if needs_split or total_too_long:
                 split_result = self._split_subtitle(subtitle)
@@ -357,7 +374,7 @@ class SubtitleFixer:
                 index=subtitle.index,  # Will be renumbered later
                 start=new_start,
                 end=new_end,
-                content=part
+                content=part,
             )
             result.append(new_subtitle)
 
@@ -369,8 +386,8 @@ class SubtitleFixer:
         split_points = []
 
         # First try line breaks
-        if '\n' in content:
-            parts = content.split('\n')
+        if "\n" in content:
+            parts = content.split("\n")
             pos = 0
             for part in parts[:-1]:  # Don't include the last part
                 pos += len(part) + 1  # +1 for the newline
@@ -379,13 +396,13 @@ class SubtitleFixer:
 
         # If no line breaks, try sentence endings
         if not split_points:
-            sentence_endings = re.finditer(r'[.!?]\s+', content)
+            sentence_endings = re.finditer(r"[.!?]\s+", content)
             for match in sentence_endings:
                 split_points.append(match.end())
 
         # If still no good splits, try commas or other punctuation
         if not split_points:
-            punctuation = re.finditer(r'[,;]\s+', content)
+            punctuation = re.finditer(r"[,;]\s+", content)
             for match in punctuation:
                 split_points.append(match.end())
 
@@ -433,25 +450,25 @@ class SubtitleFixer:
         """Apply context-sensitive OCR fixes."""
         # Fix common word-level OCR errors
         word_fixes = {
-            'tlie': 'the',
-            'witli': 'with',
-            'tliis': 'this',
-            'tliey': 'they',
-            'tliose': 'those',
-            'wlien': 'when',
-            'wliere': 'where',
-            'wlio': 'who',
-            'wliy': 'why',
-            'liis': 'his',
-            'lier': 'her',
-            'liim': 'him',
-            'slie': 'she',
-            'tliank': 'thank',
+            "tlie": "the",
+            "witli": "with",
+            "tliis": "this",
+            "tliey": "they",
+            "tliose": "those",
+            "wlien": "when",
+            "wliere": "where",
+            "wlio": "who",
+            "wliy": "why",
+            "liis": "his",
+            "lier": "her",
+            "liim": "him",
+            "slie": "she",
+            "tliank": "thank",
         }
 
         for incorrect, correct in word_fixes.items():
             # Use word boundaries to avoid partial matches
-            pattern = r'\b' + re.escape(incorrect) + r'\b'
+            pattern = r"\b" + re.escape(incorrect) + r"\b"
             content = re.sub(pattern, correct, content, flags=re.IGNORECASE)
 
         return content
@@ -467,26 +484,30 @@ class SubtitleFixer:
             content = subtitle.content
 
             # Fix ellipsis
-            content = re.sub(r'\.{2,}', '…', content)
-            content = re.sub(r'…+', '…', content)
+            content = re.sub(r"\.{2,}", "…", content)
+            content = re.sub(r"…+", "…", content)
 
             # Fix quotation marks
-            content = re.sub(r'"([^"]*)"', r'"\1"', content)  # Ensure proper quote matching
+            content = re.sub(
+                r'"([^"]*)"', r'"\1"', content
+            )  # Ensure proper quote matching
 
             # Fix apostrophes
             content = re.sub(r"'([a-z])", r"'\1", content)  # Contractions
 
             # Fix hyphens and dashes
-            content = re.sub(r'\s*-\s*', ' - ', content)  # Proper dash spacing
-            content = re.sub(r'—+', '—', content)  # Single em dash
+            content = re.sub(r"\s*-\s*", " - ", content)  # Proper dash spacing
+            content = re.sub(r"—+", "—", content)  # Single em dash
 
             # Fix exclamation and question marks
-            content = re.sub(r'!+', '!', content)
-            content = re.sub(r'\?+', '?', content)
-            content = re.sub(r'!\?|\?!', '?!', content)  # Interrobang
+            content = re.sub(r"!+", "!", content)
+            content = re.sub(r"\?+", "?", content)
+            content = re.sub(r"!\?|\?!", "?!", content)  # Interrobang
 
             # Fix periods
-            content = re.sub(r'\.{2,}(?!…)', '.', content)  # Multiple periods (but not ellipsis)
+            content = re.sub(
+                r"\.{2,}(?!…)", ".", content
+            )  # Multiple periods (but not ellipsis)
 
             if content != original_content:
                 subtitle.content = content
@@ -499,15 +520,15 @@ class SubtitleFixer:
 def apply_subtitle_fixes(
     subtitle_file: Union[str, Path],
     operations: List[str],
-    output_file: Optional[Union[str, Path]] = None
+    output_file: Optional[Union[str, Path]] = None,
 ) -> bool:
     """Apply subtitle fixes to a file.
-    
+
     Args:
         subtitle_file: Path to input subtitle file
         operations: List of operations to apply
         output_file: Path to output file (overwrites input if None)
-        
+
     Returns:
         True if successful
     """
@@ -518,7 +539,7 @@ def apply_subtitle_fixes(
             return False
 
         # Read subtitle file
-        with open(subtitle_path, 'r', encoding='utf-8') as f:
+        with open(subtitle_path, "r", encoding="utf-8") as f:
             subtitles = list(srt.parse(f.read()))
 
         if not subtitles:
@@ -529,17 +550,17 @@ def apply_subtitle_fixes(
         fixer = SubtitleFixer()
 
         for operation in operations:
-            operation = operation.lstrip('/')  # Remove leading slash if present
+            operation = operation.lstrip("/")  # Remove leading slash if present
 
-            if operation == 'fixcommonerrors':
+            if operation == "fixcommonerrors":
                 subtitles = fixer.fix_common_errors(subtitles)
-            elif operation == 'removetextforhi':
+            elif operation == "removetextforhi":
                 subtitles = fixer.remove_hearing_impaired(subtitles)
-            elif operation == 'splitlonglines':
+            elif operation == "splitlonglines":
                 subtitles = fixer.split_long_lines(subtitles)
-            elif operation == 'fixpunctuation':
+            elif operation == "fixpunctuation":
                 subtitles = fixer.fix_punctuation(subtitles)
-            elif operation == 'ocrfix':
+            elif operation == "ocrfix":
                 subtitles = fixer.apply_ocr_fixes(subtitles)
             else:
                 logger.warning("Unknown operation: %s", operation)
@@ -551,7 +572,7 @@ def apply_subtitle_fixes(
         # Write output file
         output_path = Path(output_file) if output_file else subtitle_path
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(srt.compose(subtitles))
 
         logger.info("Successfully processed subtitle file: %s", output_path)
@@ -563,15 +584,14 @@ def apply_subtitle_fixes(
 
 
 def batch_apply_subtitle_fixes(
-    subtitle_files: List[Union[str, Path]],
-    operations: List[str]
+    subtitle_files: List[Union[str, Path]], operations: List[str]
 ) -> Dict[str, bool]:
     """Apply subtitle fixes to multiple files.
-    
+
     Args:
         subtitle_files: List of subtitle file paths
         operations: List of operations to apply
-        
+
     Returns:
         Dictionary mapping file paths to success status
     """

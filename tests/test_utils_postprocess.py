@@ -25,14 +25,12 @@ class TestApplySubtitleEditPostprocess:
 
     def test_apply_subtitle_edit_postprocess_success(self) -> None:
         """Test successful post-processing with native implementation."""
-        with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
             tmp.write(b"1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
         try:
-            result = apply_subtitle_edit_postprocess(
-                tmp_path, ["fixcommonerrors"]
-            )
+            result = apply_subtitle_edit_postprocess(tmp_path, ["fixcommonerrors"])
 
             assert result is True
             # Verify file still exists after processing
@@ -50,14 +48,13 @@ class TestApplySubtitleEditPostprocess:
 
     def test_apply_subtitle_edit_postprocess_multiple_operations(self) -> None:
         """Test post-processing with multiple operations."""
-        with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
             tmp.write(b"1\n00:00:01,000 --> 00:00:02,000\n[MUSIC] Test subtitle\n")
             tmp_path = tmp.name
 
         try:
             result = apply_subtitle_edit_postprocess(
-                tmp_path,
-                ["fixcommonerrors", "removetextforhi", "ocrfix"]
+                tmp_path, ["fixcommonerrors", "removetextforhi", "ocrfix"]
             )
 
             assert result is True
@@ -97,7 +94,7 @@ class TestGenerateProcessingDescription:
             auto_split_long_lines=True,
             fix_punctuation_enabled=True,
             ocr_fix=True,
-            convert_to="vtt"
+            convert_to="vtt",
         )
 
         assert result is not None
@@ -173,7 +170,7 @@ class TestIndividualOperations:
 
     def test_apply_common_fixes(self) -> None:
         """Test apply_common_fixes function."""
-        with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
             tmp.write(b"1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
@@ -185,7 +182,7 @@ class TestIndividualOperations:
 
     def test_remove_hearing_impaired(self) -> None:
         """Test remove_hearing_impaired function."""
-        with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
             tmp.write(b"1\n00:00:01,000 --> 00:00:02,000\n[MUSIC] Test subtitle\n")
             tmp_path = tmp.name
 
@@ -197,8 +194,10 @@ class TestIndividualOperations:
 
     def test_split_long_lines(self) -> None:
         """Test split_long_lines function."""
-        with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
-            tmp.write(b"1\n00:00:01,000 --> 00:00:02,000\nThis is a very long subtitle line that should be split\n")
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
+            tmp.write(
+                b"1\n00:00:01,000 --> 00:00:02,000\nThis is a very long subtitle line that should be split\n"
+            )
             tmp_path = tmp.name
 
         try:
@@ -209,7 +208,7 @@ class TestIndividualOperations:
 
     def test_fix_punctuation(self) -> None:
         """Test fix_punctuation function."""
-        with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
             tmp.write(b"1\n00:00:01,000 --> 00:00:02,000\nTest subtitle...\n")
             tmp_path = tmp.name
 
@@ -221,7 +220,7 @@ class TestIndividualOperations:
 
     def test_apply_ocr_fixes(self) -> None:
         """Test apply_ocr_fixes function."""
-        with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
             tmp.write(b"1\n00:00:01,000 --> 00:00:02,000\nWlien the liero arrived\n")
             tmp_path = tmp.name
 
@@ -233,7 +232,7 @@ class TestIndividualOperations:
 
     def test_convert_subtitle_format(self) -> None:
         """Test convert_subtitle_format function."""
-        with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
             tmp.write(b"1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             tmp_path = tmp.name
 
@@ -252,15 +251,14 @@ class TestBatchPostprocess:
         # Create two temp files
         temp_files = []
         for i in range(2):
-            with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
-                tmp.write(f"1\n00:00:0{i+1},000 --> 00:00:0{i+2},000\nTest subtitle {i+1}\n".encode())
+            with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
+                tmp.write(
+                    f"1\n00:00:0{i+1},000 --> 00:00:0{i+2},000\nTest subtitle {i+1}\n".encode()
+                )
                 temp_files.append(tmp.name)
 
         try:
-            results = batch_postprocess(
-                temp_files,
-                ["fixcommonerrors"]
-            )
+            results = batch_postprocess(temp_files, ["fixcommonerrors"])
 
             assert len(results) == 2
             assert all(results.values())
@@ -271,17 +269,14 @@ class TestBatchPostprocess:
     def test_batch_postprocess_with_failure(self) -> None:
         """Test batch post-processing with one failure."""
         # Create one valid file and one invalid path
-        with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
             tmp.write(b"1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
             valid_file = tmp.name
 
         invalid_file = "nonexistent.srt"
 
         try:
-            results = batch_postprocess(
-                [valid_file, invalid_file],
-                ["fixcommonerrors"]
-            )
+            results = batch_postprocess([valid_file, invalid_file], ["fixcommonerrors"])
 
             assert len(results) == 2
             assert results[valid_file] is True

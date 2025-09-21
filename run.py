@@ -18,7 +18,10 @@ try:
     from subtitletools.cli import main
 except ImportError as e:
     print(f"Error importing SubtitleTools: {e}", file=sys.stderr)
-    print("Make sure you're running from the SubtitleTools directory and dependencies are installed.", file=sys.stderr)
+    print(
+        "Make sure you're running from the SubtitleTools directory and dependencies are installed.",
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 

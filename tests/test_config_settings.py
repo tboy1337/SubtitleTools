@@ -78,25 +78,25 @@ class TestConfigurationManagement:
 class TestDirectoryFunctions:
     """Test directory-related functions."""
 
-    @patch('os.name', 'nt')
-    @patch.dict(os.environ, {'APPDATA': 'C:\\Users\\Test\\AppData\\Roaming'})
+    @patch("os.name", "nt")
+    @patch.dict(os.environ, {"APPDATA": "C:\\Users\\Test\\AppData\\Roaming"})
     def test_get_app_data_dir_windows(self) -> None:
         """Test getting app data directory on Windows."""
         result = settings.get_app_data_dir()
         expected = Path("C:\\Users\\Test\\AppData\\Roaming\\SubtitleTools")
         assert result == expected
 
-    @pytest.mark.skipif(os.name == 'nt', reason="Unix test on Windows platform")
-    @patch('os.name', 'posix')
+    @pytest.mark.skipif(os.name == "nt", reason="Unix test on Windows platform")
+    @patch("os.name", "posix")
     def test_get_app_data_dir_unix(self) -> None:
         """Test getting app data directory on Unix-like systems."""
         # This test will be skipped on Windows
         # On actual Unix systems, this would test the Unix path logic
         pytest.skip("Unix-specific test not applicable on Windows")
 
-    @patch('os.name', 'nt')
+    @patch("os.name", "nt")
     @patch.dict(os.environ, {}, clear=True)  # Clear APPDATA
-    @patch('os.path.expanduser')
+    @patch("os.path.expanduser")
     def test_get_app_data_dir_windows_no_appdata(self, mock_expanduser: Any) -> None:
         """Test getting app data directory on Windows without APPDATA."""
         mock_expanduser.return_value = "C:\\Users\\Test"
@@ -106,21 +106,21 @@ class TestDirectoryFunctions:
 
     def test_get_cache_dir(self) -> None:
         """Test getting cache directory."""
-        with patch.object(settings, 'get_app_data_dir') as mock_app_dir:
+        with patch.object(settings, "get_app_data_dir") as mock_app_dir:
             mock_app_dir.return_value = Path("/test/app")
             result = settings.get_cache_dir()
             assert result == Path("/test/app/cache")
 
     def test_get_temp_dir(self) -> None:
         """Test getting temporary directory."""
-        with patch.object(settings, 'get_app_data_dir') as mock_app_dir:
+        with patch.object(settings, "get_app_data_dir") as mock_app_dir:
             mock_app_dir.return_value = Path("/test/app")
             result = settings.get_temp_dir()
             assert result == Path("/test/app/temp")
 
     def test_get_logs_dir(self) -> None:
         """Test getting logs directory."""
-        with patch.object(settings, 'get_app_data_dir') as mock_app_dir:
+        with patch.object(settings, "get_app_data_dir") as mock_app_dir:
             mock_app_dir.return_value = Path("/test/app")
             result = settings.get_logs_dir()
             assert result == Path("/test/app/logs")
@@ -204,11 +204,12 @@ class TestConstants:
 class TestDirectoryEnsurance:
     """Test directory creation functionality."""
 
-    @patch('pathlib.Path.mkdir')
+    @patch("pathlib.Path.mkdir")
     def test_ensure_directories_called_on_import(self, mock_mkdir: Any) -> None:
         """Test that _ensure_directories is called and creates directories."""
         # Reset the module to trigger directory creation
         import importlib
+
         importlib.reload(settings)
 
         # Should have created app_data, cache, temp, and logs directories
