@@ -1034,7 +1034,7 @@ class TestAdditionalCliCoverage:
 
         assert result == 0
 
-    @patch('subtitletools.cli.validate_postprocess_environment')
+    @patch('subtitletools.utils.postprocess.validate_postprocess_environment')
     @patch('subtitletools.cli.SubtitleWorkflow')
     @patch('os.path.isdir')
     def test_workflow_batch_no_files(self, mock_isdir: Mock, mock_workflow_class: Mock, mock_validate: Mock) -> None:
@@ -1069,7 +1069,7 @@ class TestAdditionalCliCoverage:
 
         assert result == 1
 
-    @patch('subtitletools.cli.validate_postprocess_environment')
+    @patch('subtitletools.utils.postprocess.validate_postprocess_environment')
     @patch('subtitletools.cli.SubtitleWorkflow')
     @patch('os.path.isdir')
     def test_workflow_postprocessing_always_available(self, mock_isdir: Mock, mock_workflow_class: Mock, mock_validate: Mock) -> None:

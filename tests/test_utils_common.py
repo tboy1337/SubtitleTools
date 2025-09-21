@@ -504,12 +504,10 @@ class TestGetSystemInfo:
 
     def test_get_system_info_with_torch(self) -> None:
         """Test system info with torch available."""
-        # Mock the import to control torch behavior
-        with patch.dict(sys.modules):
-            mock_torch = Mock()
+        # Mock torch_module directly in the common module
+        with patch('subtitletools.utils.common.torch_module') as mock_torch:
             mock_torch.__version__ = "1.12.0"
             mock_torch.cuda.is_available.return_value = True
-            sys.modules['torch'] = mock_torch
 
             info = get_system_info()
 
@@ -518,13 +516,12 @@ class TestGetSystemInfo:
 
     def test_get_system_info_no_torch(self) -> None:
         """Test system info without torch (ImportError)."""
-        # Mock import to raise ImportError
-        with patch.dict(sys.modules, {'torch': None}):
-            with patch('builtins.__import__', side_effect=ImportError("No module named 'torch'")):
-                info = get_system_info()
+        # Mock torch_module as None to simulate ImportError
+        with patch('subtitletools.utils.common.torch_module', None):
+            info = get_system_info()
 
-                assert info["torch_version"] == "Not installed"
-                assert info["cuda_available"] is False
+            assert info["torch_version"] == "Not installed"
+            assert info["cuda_available"] is False
 
     @patch('os.getcwd')
     def test_get_system_info_cwd_exception(self, mock_getcwd: Mock) -> None:
