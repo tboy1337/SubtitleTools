@@ -3,7 +3,7 @@
 import json
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import Mock, patch
 
 import pytest
@@ -223,7 +223,7 @@ class TestSubtitleWorkflow:
                             mock_checkpoint_class.return_value = mock_checkpoint
 
                             workflow = SubtitleWorkflow()
-                            setattr(workflow, '_translate_subtitles', Mock)(return_value=[Mock()])
+                            setattr(workflow, '_translate_subtitles', Mock(return_value=[Mock()]))
 
                             result = workflow.transcribe_and_translate(
                                 input_path="test.mp4",
@@ -270,7 +270,7 @@ class TestSubtitleWorkflow:
                             mock_checkpoint_class.return_value = mock_checkpoint
 
                             workflow = SubtitleWorkflow()
-                            setattr(workflow, '_translate_subtitles', Mock)(return_value=[])
+                            setattr(workflow, '_translate_subtitles', Mock(return_value=[]))
 
                             with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
                                 tmp_path = Path(tmp.name)
@@ -345,7 +345,7 @@ class TestSubtitleWorkflow:
                                     mock_processor_class.return_value = mock_processor
 
                                     workflow = SubtitleWorkflow()
-                                    setattr(workflow, '_translate_subtitles', Mock)(return_value=[Mock()])
+                                    setattr(workflow, '_translate_subtitles', Mock(return_value=[Mock()]))
 
                                     result = workflow.transcribe_and_translate(
                                         input_path="test.mp4",
@@ -541,7 +541,7 @@ class TestSubtitleWorkflow:
                     mock_processor_class.return_value = mock_processor
 
                     workflow = SubtitleWorkflow()
-                    setattr(workflow, '_translate_subtitles', Mock)(return_value=[Mock(), Mock(), Mock()])
+                    setattr(workflow, '_translate_subtitles', Mock(return_value=[Mock(), Mock(), Mock()]))
 
                     result = workflow.translate_existing_subtitles(
                         input_path="input.srt",
@@ -591,7 +591,7 @@ class TestSubtitleWorkflow:
                     workflow = SubtitleWorkflow()
 
                     # Simplify test - just test that it processes files and returns results
-                    setattr(workflow, 'transcribe_and_translate', Mock)(return_value={"status": "completed", "total_time": 120})
+                    setattr(workflow, 'transcribe_and_translate', Mock(return_value={"status": "completed", "total_time": 120}))
 
                     with patch('subtitletools.core.workflow.is_video_file', return_value=True):
                         with patch('subtitletools.core.workflow.is_audio_file', return_value=False):
@@ -613,7 +613,7 @@ class TestSubtitleWorkflow:
                     workflow = SubtitleWorkflow()
 
                     # Mock to always fail to test error handling
-                    setattr(workflow, 'transcribe_and_translate', Mock)(side_effect=Exception("Processing failed"))
+                    setattr(workflow, 'transcribe_and_translate', Mock(side_effect=Exception("Processing failed")))
 
                     with patch('subtitletools.core.workflow.is_video_file', return_value=True):
                         with patch('subtitletools.core.workflow.is_audio_file', return_value=False):
@@ -650,8 +650,11 @@ class TestSubtitleWorkflow:
                     assert "translator" in info
                     assert "postprocess_available" in info
                     assert info["postprocess_available"] is True
-                    assert isinstance(info, dict) and info["transcriber"]["model"] == "small"
-                    assert isinstance(info, dict) and info["translator"]["service"] == "google"
+                    assert isinstance(info, dict) 
+                    transcriber_info = cast(dict[str, Any], info["transcriber"])
+                    translator_info = cast(dict[str, Any], info["translator"])
+                    assert transcriber_info["model"] == "small"
+                    assert translator_info["service"] == "google"
 
 
 class TestWorkflowMissingCoverage:
@@ -755,7 +758,7 @@ class TestWorkflowMissingCoverage:
                                 mock_checkpoint_class.return_value = mock_checkpoint
 
                                 workflow = SubtitleWorkflow()
-                                setattr(workflow, '_translate_subtitles', Mock)(return_value=[])
+                                setattr(workflow, '_translate_subtitles', Mock(return_value=[]))
 
                                 with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
                                     tmp_path = Path(tmp.name)
@@ -797,7 +800,7 @@ class TestWorkflowMissingCoverage:
                             mock_checkpoint_class.return_value = mock_checkpoint
 
                             workflow = SubtitleWorkflow()
-                            setattr(workflow, '_translate_subtitles', Mock)(return_value=[])
+                            setattr(workflow, '_translate_subtitles', Mock(return_value=[]))
 
                             workflow.transcribe_and_translate(
                                 input_path="test.mp4",
@@ -906,7 +909,7 @@ class TestWorkflowMissingCoverage:
                             return {"status": "completed", "total_time": 120}
                         raise RuntimeError("Processing failed")
 
-                    setattr(workflow, 'transcribe_and_translate', Mock)(side_effect=mock_transcribe_and_translate)
+                    setattr(workflow, 'transcribe_and_translate', Mock(side_effect=mock_transcribe_and_translate))
 
                     with patch('subtitletools.core.workflow.is_video_file', return_value=True):
                         with patch('subtitletools.core.workflow.is_audio_file', return_value=False):
@@ -932,7 +935,7 @@ class TestWorkflowMissingCoverage:
 
                     workflow = SubtitleWorkflow()
 
-                    setattr(workflow, 'translate_existing_subtitles', Mock)(return_value={"status": "completed", "total_time": 30})
+                    setattr(workflow, 'translate_existing_subtitles', Mock(return_value={"status": "completed", "total_time": 30}))
 
                     with patch('subtitletools.core.workflow.is_video_file', return_value=False):
                         with patch('subtitletools.core.workflow.is_audio_file', return_value=False):
@@ -942,7 +945,7 @@ class TestWorkflowMissingCoverage:
                             )
 
                     assert len(result) >= 1
-                    workflow.translate_existing_subtitles.assert_called_once()
+                    getattr(workflow, 'translate_existing_subtitles').assert_called_once()
 
     def test_get_workflow_info_native_processing(self) -> None:
         """Test get_workflow_info with native processing (always available)."""
@@ -970,5 +973,8 @@ class TestWorkflowMissingCoverage:
                         assert "translator" in info
                         assert "postprocess_available" in info
                         assert info["postprocess_available"] is False
-                        assert isinstance(info, dict) and info["transcriber"]["model"] == "large"
-                        assert isinstance(info, dict) and info["translator"]["service"] == "google_cloud"
+                        assert isinstance(info, dict)
+                        transcriber_info = cast(dict[str, Any], info["transcriber"])
+                        translator_info = cast(dict[str, Any], info["translator"])
+                        assert transcriber_info["model"] == "large"
+                        assert translator_info["service"] == "google_cloud"
