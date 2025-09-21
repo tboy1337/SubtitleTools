@@ -40,7 +40,6 @@ from .utils.encoding import (
 from .utils.postprocess import get_supported_output_formats
 
 if TYPE_CHECKING:
-    from typing import Any
     from argparse import _SubParsersAction
 
 logger = logging.getLogger(__name__)
