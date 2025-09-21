@@ -62,7 +62,13 @@ disable=
     # Dynamic imports are common in tests for conditional test setup
     import-outside-toplevel,
     # Test classes define attributes in setup methods rather than __init__
-    attribute-defined-outside-init
+    attribute-defined-outside-init,
+    # CLI applications need broad exception handling for robustness
+    broad-exception-caught,
+    # Test code similarities are acceptable (fixtures, test patterns)
+    duplicate-code,
+    # Testing internal APIs requires protected access
+    protected-access
 
 # Enable the message, report, category or checker with the given id(s).
 enable=c-extension-no-member

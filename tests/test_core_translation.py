@@ -48,7 +48,7 @@ class TestTranslatorABC:
     def test_translator_is_abstract(self) -> None:
         """Test that Translator cannot be instantiated directly."""
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-            Translator()
+            Translator()  # pylint: disable=abstract-class-instantiated
 
 
 class TestTkGenerator:
