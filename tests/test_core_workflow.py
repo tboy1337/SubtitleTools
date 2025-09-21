@@ -946,7 +946,7 @@ class TestWorkflowMissingCoverage:
                             )
 
                     assert len(result) >= 1
-                    mock_translate.assert_called_once_with()
+                    mock_translate.assert_called_once_with("subtitle.srt", Path("output/subtitle.srt"))
 
     def test_get_workflow_info_native_processing(self) -> None:
         """Test get_workflow_info with native processing (always available)."""

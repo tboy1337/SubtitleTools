@@ -815,27 +815,27 @@ def main(args: Optional[List[str]] = None) -> int:  # pylint: disable=too-many-r
         parsed_args = parser.parse_args(args)
 
         # Setup logging
-        log_level = logging.DEBUG if cast(Any, args).verbose else logging.INFO
-        setup_logging(log_level, cast(Any, args).log_file)
+        log_level = logging.DEBUG if parsed_args.verbose else logging.INFO
+        setup_logging(log_level, parsed_args.log_file)
 
         # Log system information in debug mode
-        if cast(Any, args).verbose:
+        if parsed_args.verbose:
             sys_info = get_system_info()
             logger.debug("System info: %s", sys_info)
 
         # Print banner
-        if not cast(Any, args).verbose:
+        if not parsed_args.verbose:
             print("SubtitleTools v1.0.0 - Complete Subtitle Workflow Tool")
             print("=" * 50)
 
         # Dispatch to command handlers
-        if cast(Any, args).command == "transcribe":
+        if parsed_args.command == "transcribe":
             return handle_transcribe_command(parsed_args)
-        if cast(Any, args).command == "translate":
+        if parsed_args.command == "translate":
             return handle_translate_command(parsed_args)
-        if cast(Any, args).command == "encode":
+        if parsed_args.command == "encode":
             return handle_encode_command(parsed_args)
-        if cast(Any, args).command == "workflow":
+        if parsed_args.command == "workflow":
             return handle_workflow_command(parsed_args)
 
         parser.print_help()

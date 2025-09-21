@@ -52,12 +52,14 @@ class WorkflowResults(TypedDict, total=False):
     translation_time: Optional[float]
     postprocessing_time: Optional[float]
     postprocessing_success: Optional[bool]
+    original_segments: Optional[int]
     translated_segments: Optional[int]
     steps_completed: List[str]
     # Allow additional fields for flexibility
     file_size_mb: Optional[float]
     src_lang: Optional[str]
     target_lang: Optional[str]
+    error: Optional[str]
 
 
 class WorkflowError(Exception):
@@ -481,6 +483,7 @@ class SubtitleWorkflow:
                 "output_path": str(output_path_obj),
                 "src_lang": src_lang,
                 "target_lang": target_lang,
+                "original_segments": len(subtitles),
                 "translated_segments": len(translated_subtitles),
                 "total_time": total_time,
                 "status": "completed",
@@ -561,6 +564,7 @@ class SubtitleWorkflow:
                     "postprocessing_success": None,
                     "translated_segments": None,
                     "steps_completed": [],
+                    "error": str(e),
                 }
                 results[str(input_path)] = error_result
             except Exception as e:
@@ -576,6 +580,7 @@ class SubtitleWorkflow:
                     "postprocessing_success": None,
                     "translated_segments": None,
                     "steps_completed": [],
+                    "error": str(e),
                 }
                 results[str(input_path)] = unexpected_error_result
 
