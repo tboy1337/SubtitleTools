@@ -18,5 +18,3 @@ isort
 
 # Development dependencies
 twine
-wheel
-setuptools
