@@ -1,0 +1,12 @@
+# Core transcription dependencies
+openai-whisper
+torch
+scipy
+numpy
+tqdm
+
+# Core translation dependencies
+pyexecjs
+srt
+requests
+jieba

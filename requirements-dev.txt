@@ -1,0 +1,22 @@
+# Core Testing Packages
+pytest
+pytest-asyncio
+pytest-timeout
+pytest-xdist
+pytest-mock
+pytest-cov
+pytest-html
+pytest-json-report
+pytest-benchmark
+pytest-rerunfailures
+
+# Linting and code quality
+pylint
+mypy
+black
+isort
+
+# Development dependencies
+twine
+wheel
+setuptools

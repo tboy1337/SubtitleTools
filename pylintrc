@@ -1,0 +1,356 @@
+[MASTER]
+# Python code to execute, usually for sys.path manipulation such as
+# pygtk.require().
+init-hook='import sys; sys.path.append("src")'
+
+# Add files or directories to the blacklist. They should be base names, not paths.
+ignore=CVS,__pycache__,.git,.mypy_cache,.pytest_cache,htmlcov,build,dist,.eggs
+
+# Add files or directories matching the regex patterns to the blacklist.
+ignore-patterns=
+
+# Use multiple processes to speed up Pylint.
+jobs=0
+
+# Control the amount of potential inferred values when inferring a single
+# object. This can help the performance when dealing with large functions or
+# complex, nested conditions.
+limit-inference-results=100
+
+# List of plugins (as comma separated values of python module names) to load
+# plugins=
+
+# Pickle collected data for later comparisons.
+persistent=yes
+
+# When enabled, pylint would attempt to guess common misconfiguration and emit
+# user-friendly hints instead of false-positive error messages.
+suggestion-mode=yes
+
+# Allow loading of arbitrary C extensions. Extensions are imported into the
+# active Python interpreter and may run arbitrary code.
+unsafe-load-any-extension=no
+
+[MESSAGES CONTROL]
+# Disable the message, report, category or checker with the given id(s).
+disable=
+    # Convention violations that are handled by black/isort
+    line-too-long,
+    # Docstring conventions handled by formatter
+    missing-module-docstring,
+    # Specific issues to allow for practical development
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    too-many-instance-attributes,
+    # Allow TODO comments
+    fixme,
+    # External library imports
+    import-error,
+    no-name-in-module
+
+# Enable the message, report, category or checker with the given id(s).
+enable=c-extension-no-member
+
+[REPORTS]
+# Python expression which should return a score less than or equal to 10.
+evaluation=max(0, 0 if fatal else 10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10))
+
+# Template used to display messages.
+msg-template='{path}:{line}:{column}: {msg_id}: {msg} ({symbol})'
+
+# Set the output format.
+output-format=text
+
+# Tells whether to display a full report or only the messages.
+reports=yes
+
+# Activate the evaluation score.
+score=yes
+
+[REFACTORING]
+# Maximum number of nested blocks for function / method body
+max-nested-blocks=5
+
+# Complete name of functions that never returns.
+never-returning-functions=sys.exit,argparse.parse_error
+
+[BASIC]
+# Naming style matching correct argument names.
+argument-naming-style=snake_case
+
+# Naming style matching correct attribute names.
+attr-naming-style=snake_case
+
+# Bad variable names which should always be refused.
+bad-names=foo,bar,baz,toto,tutu,tata
+
+# Naming style matching correct class attribute names.
+class-attribute-naming-style=any
+
+# Naming style matching correct class constant names.
+class-const-naming-style=UPPER_CASE
+
+# Naming style matching correct class names.
+class-naming-style=PascalCase
+
+# Naming style matching correct constant names.
+const-naming-style=UPPER_CASE
+
+# Minimum line length for functions/classes that require docstrings.
+docstring-min-length=-1
+
+# Naming style matching correct function names.
+function-naming-style=snake_case
+
+# Good variable names which should always be accepted.
+good-names=i,j,k,ex,Run,_,f,x,y,z,id,e,logger
+
+# Naming style matching correct inline iteration names.
+inlinevar-naming-style=any
+
+# Naming style matching correct method names.
+method-naming-style=snake_case
+
+# Naming style matching correct module names.
+module-naming-style=snake_case
+
+# Colon-delimited sets of names that determine each other's naming style when
+# the name regexes allow several styles.
+name-group=
+
+# Regular expression matching correct names overrides the naming style.
+# name-hint=
+
+# List of decorators that produce properties.
+property-classes=abc.abstractproperty
+
+# Naming style matching correct variable names.
+variable-naming-style=snake_case
+
+[FORMAT]
+# Expected format of line ending, e.g. empty (any line ending), LF or CRLF.
+expected-line-ending-format=
+
+# Regexp for a line that is allowed to be longer than the limit.
+ignore-long-lines=^\s*(# )?<?https?://\S+>?$
+
+# Number of spaces of indent required inside a hanging or continued line.
+indent-after-paren=4
+
+# String used as indentation unit.
+indent-string='    '
+
+# Maximum number of characters on a single line.
+max-line-length=88
+
+# Maximum number of lines in a module.
+max-module-lines=1000
+
+# Allow the body of a class to be on the same line as the declaration if body
+# contains single statement.
+single-line-class-stmt=no
+
+# Allow the body of an if to be on the same line as the test if there is no else.
+single-line-if-stmt=no
+
+[LOGGING]
+# The type of string formatting that logging methods do.
+logging-format-style=old
+
+# Logging modules to check that the string format arguments are in logging
+logging-modules=logging
+
+[MISCELLANEOUS]
+# List of note tags to take in consideration.
+notes=FIXME,XXX,TODO
+
+[SIMILARITIES]
+# Comments are removed from the similarity computation
+ignore-comments=yes
+
+# Docstrings are removed from the similarity computation
+ignore-docstrings=yes
+
+# Imports are removed from the similarity computation
+ignore-imports=no
+
+# Signatures are removed from the similarity computation
+ignore-signatures=no
+
+# Minimum lines number of a similarity.
+min-similarity-lines=4
+
+[SPELLING]
+# Limits count of emitted suggestions per file.
+max-spelling-suggestions=4
+
+# Spelling dictionary name.
+spelling-dict=
+
+# List of comma separated words that should be considered directives if they
+# appear and the beginning of a comment and should not be checked.
+spelling-ignore-comment-directives=fmt: on,fmt: off,noqa:,noqa,nosec,isort:skip,mypy:
+
+# List of comma separated words that should not be checked.
+spelling-ignore-words=
+
+# A path to a file that contains the private dictionary.
+spelling-private-dict-file=
+
+# Tells whether to store unknown words to the private dictionary.
+spelling-store-unknown-words=no
+
+[STRING]
+# This flag controls whether inconsistent-quotes generates a warning when the
+# character used as a quote delimiter is used inconsistently within a module.
+check-quote-consistency=no
+
+# This flag controls whether the implicit-str-concat should generate a warning
+# on implicit string concatenation in sequences defined over several lines.
+check-str-concat-over-line-jumps=no
+
+[TYPECHECK]
+# List of decorators that produce context managers.
+contextmanager-decorators=contextlib.contextmanager
+
+# List of members which are set dynamically and missed by pylint inference
+generated-members=
+
+# Tells whether missing members accessed in mixin class should be ignored.
+ignore-mixin-members=yes
+
+# Tells whether to warn about missing members when the owner of the attribute
+# is inferred to be None.
+ignore-none=yes
+
+# This flag controls whether pylint should warn about no-member and similar
+# checks whenever an opaque object is returned when inferring.
+ignore-on-opaque-inference=yes
+
+# List of class names for which member attributes should not be checked.
+ignored-classes=optparse.Values,thread._local,_thread._local
+
+# List of module names for which member attributes should not be checked.
+ignored-modules=
+
+# Show a hint with the correct naming format instead of only the name.
+include-naming-hint=no
+
+# List of decorators that change the signature of a decorated function.
+signature-mutators=
+
+[VARIABLES]
+# List of additional names supposed to be defined in builtins.
+additional-builtins=
+
+# Tells whether unused global variables should be treated as a violation.
+allow-global-unused-variables=yes
+
+# List of names allowed to shadow builtins
+allowed-redefined-builtins=
+
+# List of strings which can identify a callback function by name.
+callbacks=cb_,_cb
+
+# A regular expression matching the name of dummy variables.
+dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_
+
+# Argument names that match this expression will be ignored.
+ignored-argument-names=_.*|^ignored_|^unused_
+
+# Tells whether we should check for unused import in __init__ files.
+init-import=no
+
+# List of qualified module names which can have objects that can redefine builtins.
+redefining-builtins-modules=six.moves,past.builtins,future.builtins,builtins,io
+
+[CLASSES]
+# Warn about protected attribute access inside special methods
+check-protected-access-in-special-methods=no
+
+# List of method names used to declare (i.e. assign) instance attributes.
+defining-attr-methods=__init__,__new__,setUp,__post_init__
+
+# List of member names, which should be excluded from the protected access warning.
+exclude-protected=_asdict,_fields,_replace,_source,_make
+
+# List of valid names for the first argument in a class method.
+valid-classmethod-first-arg=cls
+
+# List of valid names for the first argument in a metaclass class method.
+valid-metaclass-classmethod-first-arg=cls
+
+[DESIGN]
+# List of regular expressions of class ancestor names to ignore when counting
+# public methods (see R0903)
+exclude-too-few-public-methods=
+
+# Maximum number of arguments for function / method.
+max-args=5
+
+# Maximum number of attributes for a class (see R0902).
+max-attributes=7
+
+# Maximum number of boolean expressions in an if statement (see R0916).
+max-bool-expr=5
+
+# Maximum number of branch for function / method body.
+max-branches=12
+
+# Maximum number of locals for function / method body.
+max-locals=15
+
+# Maximum number of parents for a class (see R0901).
+max-parents=7
+
+# Maximum number of public methods for a class (see R0904).
+max-public-methods=20
+
+# Maximum number of return / yield for function / method body.
+max-returns=6
+
+# Maximum number of statements in function / method body.
+max-statements=50
+
+# Minimum number of public methods for a class (see R0903).
+min-public-methods=2
+
+[IMPORTS]
+# List of modules that can be imported at any level, not just the top level
+allow-any-import-level=
+
+# Allow wildcard imports from modules that define __all__.
+allow-wildcard-with-all=no
+
+# Analyse import fallback blocks.
+analyse-fallback-blocks=no
+
+# Deprecated modules which should not be used.
+deprecated-modules=optparse,tkinter.tix
+
+# Output a graph (.gv or any supported image format) of external dependencies
+ext-import-graph=
+
+# Output a graph (.gv or any supported image format) of all (i.e. internal
+# and external) dependencies to the given file.
+import-graph=
+
+# Output a graph (.gv or any supported image format) of internal dependencies
+int-import-graph=
+
+# Force import order to recognize a module as part of the standard
+# compatibility libraries.
+known-standard-library=
+
+# Force import order to recognize a module as part of a third party library.
+known-third-party=enchant
+
+# Couples of modules and preferred modules, separated by a comma.
+preferred-modules=
+
+[EXCEPTIONS]
+# Exceptions that will emit a warning when being caught.
+overgeneral-exceptions=builtins.BaseException,builtins.Exception
