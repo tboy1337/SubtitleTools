@@ -491,7 +491,7 @@ class TestSubtitleProcessorEdgeCases:
         result3 = self.processor.merge_subtitles([], subs)
         assert result3 == subs
 
-    def test_split_sentences_empty(self) -> None:
+    def test_split_sentences_empty_list(self) -> None:
         """Test split_sentences with empty input."""
         result = self.processor.split_sentences([])
         assert result == []
@@ -672,8 +672,8 @@ class TestSubtitleProcessorEdgeCases:
         issues = self.processor.validate_subtitles(subs)
         assert any("Overlaps" in issue for issue in issues)
 
-    def test_validate_subtitles_empty_content(self) -> None:
-        """Test validate_subtitles with empty content."""
+    def test_validate_subtitles_whitespace_content(self) -> None:
+        """Test validate_subtitles with whitespace-only content."""
         subs = [
             srt.Subtitle(1, timedelta(seconds=1), timedelta(seconds=3), "   ")  # Empty content
         ]
@@ -744,7 +744,7 @@ class TestSubtitleProcessorEdgeCases:
         # Should contain split sentences
         assert any("Hello world" in sentence for sentence in result)
 
-    def test_split_sentences_chinese(self) -> None:
+    def test_split_sentences_chinese_basic(self) -> None:
         """Test sentence splitting for Chinese text."""
         subtitles = [
             srt.Subtitle(
@@ -760,7 +760,7 @@ class TestSubtitleProcessorEdgeCases:
         assert isinstance(result, list)
         assert len(result) >= 1
 
-    def test_split_sentences_empty(self) -> None:
+    def test_split_sentences_empty_basic(self) -> None:
         """Test sentence splitting with empty input."""
         result = self.processor.split_sentences([], "en")
 
@@ -1004,13 +1004,13 @@ class TestSubtitleProcessorEdgeCases:
         assert result[0].start == timedelta(seconds=3)
         assert result[0].end == timedelta(seconds=5)
 
-    def test_validate_subtitles_empty(self) -> None:
+    def test_validate_subtitles_empty_basic(self) -> None:
         """Test validating empty subtitle list."""
         issues = self.processor.validate_subtitles([])
 
         assert "No subtitles found" in issues
 
-    def test_validate_subtitles_index_mismatch(self) -> None:
+    def test_validate_subtitles_index_mismatch_detailed(self) -> None:
         """Test validating subtitles with index mismatch."""
         subtitles = [
             srt.Subtitle(
@@ -1046,7 +1046,7 @@ class TestSubtitleProcessorEdgeCases:
 
         assert any("Invalid timing" in issue for issue in issues)
 
-    def test_validate_subtitles_empty_content(self) -> None:
+    def test_validate_subtitles_empty_content_basic(self) -> None:
         """Test validating subtitles with empty content."""
         subtitles = [
             srt.Subtitle(

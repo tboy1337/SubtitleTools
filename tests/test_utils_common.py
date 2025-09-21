@@ -75,7 +75,7 @@ class TestSetupLogging:
 
     def test_setup_logging_with_level(self) -> None:
         """Test setup_logging with custom level."""
-        logger = setup_logging(level=logging.DEBUG)
+        setup_logging(level=logging.DEBUG)
 
         # Check that root logger level was set
         root_logger = logging.getLogger()

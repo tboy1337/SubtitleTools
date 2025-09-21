@@ -2,13 +2,13 @@
 
 import os
 import tempfile
+from datetime import timedelta
 from pathlib import Path
 from typing import Generator
 from unittest.mock import patch
 
 import pytest
 import srt
-from datetime import timedelta
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def test_data_dir() -> Generator[Path, None, None]:
 
 
 @pytest.fixture
-def sample_video_file(temp_dir: Path) -> Path:
+def sample_video_file(temp_dir: Path) -> Path:  # pylint: disable=redefined-outer-name
     """Create a sample video file for testing."""
     video_file = temp_dir / "test_video.mp4"
     video_file.write_bytes(b"fake video content")  # Minimal fake content
@@ -44,7 +44,7 @@ def sample_video_file(temp_dir: Path) -> Path:
 
 
 @pytest.fixture
-def sample_audio_file(temp_dir: Path) -> Path:
+def sample_audio_file(temp_dir: Path) -> Path:  # pylint: disable=redefined-outer-name
     """Create a sample audio file for testing."""
     audio_file = temp_dir / "test_audio.wav"
     audio_file.write_bytes(b"fake audio content")  # Minimal fake content
@@ -70,7 +70,7 @@ and formatting
 
 
 @pytest.fixture
-def sample_srt_file(temp_dir: Path, sample_srt_content: str) -> Path:
+def sample_srt_file(temp_dir: Path, sample_srt_content: str) -> Path:  # pylint: disable=redefined-outer-name
     """Create a sample SRT file for testing."""
     srt_file = temp_dir / "test.srt"
     srt_file.write_text(sample_srt_content, encoding="utf-8")
@@ -191,6 +191,6 @@ def get_test_data_path(filename: str) -> Path:
     Returns:
         Path object pointing to the file in test_data directory
     """
-    test_data_dir = Path(__file__).parent / "test_data"
-    test_data_dir.mkdir(exist_ok=True)
-    return test_data_dir / filename
+    data_dir = Path(__file__).parent / "test_data"
+    data_dir.mkdir(exist_ok=True)
+    return data_dir / filename

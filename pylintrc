@@ -49,7 +49,20 @@ disable=
     fixme,
     # External library imports
     import-error,
-    no-name-in-module
+    no-name-in-module,
+    # Test-specific ignores for acceptable patterns in test files
+    # Test files can have longer modules due to comprehensive test coverage
+    too-many-lines,
+    # Test classes often have many test methods
+    too-many-public-methods,
+    # Test fixtures often use parameter names that match outer scope fixtures  
+    redefined-outer-name,
+    # Mock arguments in tests may not be used directly but are needed for patching
+    unused-argument,
+    # Dynamic imports are common in tests for conditional test setup
+    import-outside-toplevel,
+    # Test classes define attributes in setup methods rather than __init__
+    attribute-defined-outside-init
 
 # Enable the message, report, category or checker with the given id(s).
 enable=c-extension-no-member

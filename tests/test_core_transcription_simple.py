@@ -118,7 +118,7 @@ class TestSubWhisperTranscriberBasic:
             tmp_path = tmp.name
 
         try:
-            with patch('whisper.load_model') as mock_load:
+            with patch('whisper.load_model'):
                 with patch('subtitletools.utils.audio.validate_audio_file', return_value=True):
                     with patch('subtitletools.core.transcription.SubWhisperTranscriber._perform_transcription') as mock_perform:
                         mock_perform.return_value = {"invalid": "result"}  # Missing segments

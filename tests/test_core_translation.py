@@ -124,7 +124,6 @@ class TestGoogleTranslator:
     def test_rotate_user_agent(self) -> None:
         """Test user agent rotation."""
         translator = GoogleTranslator()
-        original_ua = translator.headers["User-Agent"]
 
         translator._rotate_user_agent()
 

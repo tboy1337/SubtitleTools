@@ -95,7 +95,7 @@ class TestGenerateProcessingDescription:
             fix_common_errors=True,
             remove_hi=True,
             auto_split_long_lines=True,
-            fix_punctuation=True,
+            fix_punctuation_enabled=True,
             ocr_fix=True,
             convert_to="vtt"
         )

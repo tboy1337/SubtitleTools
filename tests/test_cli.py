@@ -193,7 +193,7 @@ class TestTranscribeCommand:
 
     @patch('subtitletools.cli.SubWhisperTranscriber')
     @patch('os.path.isdir')
-    def test_handle_transcribe_command_batch_no_files(self, mock_isdir: Mock, mock_transcriber_class: Mock) -> None:
+    def test_handle_transcribe_command_batch_no_files(self, mock_isdir: Mock, mock_transcriber_class: Mock) -> None:  # pylint: disable=unused-argument
         """Test batch transcription with no files found."""
         args = argparse.Namespace(
             input="videos/",
@@ -216,7 +216,7 @@ class TestTranscribeCommand:
     @patch('subtitletools.cli.SubWhisperTranscriber')
     @patch('subtitletools.utils.common.is_video_file')
     @patch('subtitletools.utils.common.is_audio_file')
-    def test_handle_transcribe_command_unsupported_file(self, mock_is_audio: Mock, mock_is_video: Mock, mock_transcriber_class: Mock) -> None:
+    def test_handle_transcribe_command_unsupported_file(self, mock_is_audio: Mock, mock_is_video: Mock, mock_transcriber_class: Mock) -> None:  # pylint: disable=unused-argument
         """Test transcribe command with unsupported file type."""
         args = argparse.Namespace(
             input="document.txt",
@@ -335,7 +335,7 @@ class TestTranslateCommand:
     @patch('subtitletools.cli.SubtitleTranslator')
     @patch('subtitletools.cli.SubtitleProcessor')
     @patch('os.path.isdir')
-    def test_handle_translate_command_input_dir_not_found(self, mock_isdir: Mock, mock_processor_class: Mock, mock_translator_class: Mock) -> None:
+    def test_handle_translate_command_input_dir_not_found(self, mock_isdir: Mock, mock_processor_class: Mock, mock_translator_class: Mock) -> None:  # pylint: disable=unused-argument
         """Test translate command with input directory not found."""
         args = argparse.Namespace(
             input="nonexistent/",
@@ -360,7 +360,7 @@ class TestTranslateCommand:
     @patch('subtitletools.cli.SubtitleTranslator')
     @patch('subtitletools.cli.SubtitleProcessor')
     @patch('os.path.isdir')
-    def test_handle_translate_command_no_files_found(self, mock_isdir: Mock, mock_processor_class: Mock, mock_translator_class: Mock) -> None:
+    def test_handle_translate_command_no_files_found(self, mock_isdir: Mock, mock_processor_class: Mock, mock_translator_class: Mock) -> None:  # pylint: disable=unused-argument
         """Test translate command with no files matching pattern."""
         args = argparse.Namespace(
             input="input/",
@@ -386,7 +386,7 @@ class TestTranslateCommand:
 
     @patch('subtitletools.cli.SubtitleTranslator')
     @patch('subtitletools.cli.SubtitleProcessor')
-    def test_handle_translate_command_translation_error(self, mock_processor_class: Mock, mock_translator_class: Mock) -> None:
+    def test_handle_translate_command_translation_error(self, mock_processor_class: Mock, mock_translator_class: Mock) -> None:  # pylint: disable=unused-argument
         """Test translate command with translation error."""
         args = argparse.Namespace(
             input="input.srt",
@@ -408,7 +408,7 @@ class TestTranslateCommand:
 
     @patch('subtitletools.cli.SubtitleTranslator')
     @patch('subtitletools.cli.SubtitleProcessor')
-    def test_handle_translate_command_subtitle_error(self, mock_processor_class: Mock, mock_translator_class: Mock) -> None:
+    def test_handle_translate_command_subtitle_error(self, mock_processor_class: Mock, mock_translator_class: Mock) -> None:  # pylint: disable=unused-argument
         """Test translate command with subtitle error."""
         args = argparse.Namespace(
             input="input.srt",
@@ -639,7 +639,7 @@ class TestWorkflowCommand:
     @patch('subtitletools.utils.common.is_video_file')
     @patch('subtitletools.utils.common.is_audio_file')
     @patch('subtitletools.utils.common.is_subtitle_file')
-    def test_handle_workflow_command_unsupported_file(self, mock_is_subtitle: Mock, mock_is_audio: Mock, mock_is_video: Mock, mock_workflow_class: Mock) -> None:
+    def test_handle_workflow_command_unsupported_file(self, mock_is_subtitle: Mock, mock_is_audio: Mock, mock_is_video: Mock, mock_workflow_class: Mock) -> None:  # pylint: disable=unused-argument
         """Test workflow command with unsupported file type."""
         args = argparse.Namespace(
             input="document.txt",
@@ -743,7 +743,7 @@ class TestMainFunction:
 
     @patch('subtitletools.cli.create_parser')
     @patch('subtitletools.utils.common.setup_logging')
-    def test_main_no_command(self, mock_setup_logging: Mock, mock_create_parser: Mock) -> None:
+    def test_main_no_command(self, mock_setup_logging: Mock, mock_create_parser: Mock) -> None:  # pylint: disable=unused-argument
         """Test main function with no command."""
         mock_parser = Mock()
         mock_parser.parse_args.return_value = argparse.Namespace(
@@ -760,7 +760,7 @@ class TestMainFunction:
 
     @patch('subtitletools.cli.handle_transcribe_command')
     @patch('subtitletools.utils.common.setup_logging')
-    def test_main_transcribe_command(self, mock_setup_logging: Mock, mock_handle_transcribe: Mock) -> None:
+    def test_main_transcribe_command(self, mock_setup_logging: Mock, mock_handle_transcribe: Mock) -> None:  # pylint: disable=unused-argument
         """Test main function with transcribe command."""
         mock_handle_transcribe.return_value = 0
 
@@ -780,7 +780,7 @@ class TestMainFunction:
 
     @patch('subtitletools.cli.handle_translate_command')
     @patch('subtitletools.utils.common.setup_logging')
-    def test_main_translate_command(self, mock_setup_logging: Mock, mock_handle_translate: Mock) -> None:
+    def test_main_translate_command(self, mock_setup_logging: Mock, mock_handle_translate: Mock) -> None:  # pylint: disable=unused-argument
         """Test main function with translate command."""
         mock_handle_translate.return_value = 0
 
@@ -800,7 +800,7 @@ class TestMainFunction:
 
     @patch('subtitletools.cli.handle_encode_command')
     @patch('subtitletools.utils.common.setup_logging')
-    def test_main_encode_command(self, mock_setup_logging: Mock, mock_handle_encode: Mock) -> None:
+    def test_main_encode_command(self, mock_setup_logging: Mock, mock_handle_encode: Mock) -> None:  # pylint: disable=unused-argument
         """Test main function with encode command."""
         mock_handle_encode.return_value = 0
 
@@ -820,7 +820,7 @@ class TestMainFunction:
 
     @patch('subtitletools.cli.handle_workflow_command')
     @patch('subtitletools.utils.common.setup_logging')
-    def test_main_workflow_command(self, mock_setup_logging: Mock, mock_handle_workflow: Mock) -> None:
+    def test_main_workflow_command(self, mock_setup_logging: Mock, mock_handle_workflow: Mock) -> None:  # pylint: disable=unused-argument
         """Test main function with workflow command."""
         mock_handle_workflow.return_value = 0
 

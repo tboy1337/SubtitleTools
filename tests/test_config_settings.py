@@ -91,7 +91,7 @@ class TestDirectoryFunctions:
         """Test getting app data directory on Unix-like systems."""
         # This test will be skipped on Windows
         # On actual Unix systems, this would test the Unix path logic
-        pass
+        pytest.skip("Unix-specific test not applicable on Windows")
 
     @patch('os.name', 'nt')
     @patch.dict(os.environ, {}, clear=True)  # Clear APPDATA

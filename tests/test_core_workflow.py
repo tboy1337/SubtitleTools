@@ -176,9 +176,9 @@ class TestSubtitleWorkflow:
         """Test SubtitleWorkflow initialization with custom parameters."""
         with patch('subtitletools.core.workflow.SubWhisperTranscriber') as mock_transcriber:
             with patch('subtitletools.core.workflow.SubtitleTranslator') as mock_translator:
-                with patch('subtitletools.core.workflow.SubtitleProcessor') as mock_processor:
+                with patch('subtitletools.core.workflow.SubtitleProcessor'):
 
-                    workflow = SubtitleWorkflow(
+                    SubtitleWorkflow(
                         whisper_model="large",
                         translation_service="google_cloud",
                         api_key="test_key"
@@ -251,7 +251,7 @@ class TestSubtitleWorkflow:
         mock_size.return_value = 50.2
 
         with patch('subtitletools.core.workflow.SubWhisperTranscriber') as mock_transcriber_class:
-            with patch('subtitletools.core.workflow.SubtitleTranslator') as mock_translator_class:
+            with patch('subtitletools.core.workflow.SubtitleTranslator'):
                 with patch('subtitletools.core.workflow.SubtitleProcessor') as mock_processor_class:
                     with patch('subtitletools.core.workflow.CheckpointManager') as mock_checkpoint_class:
                         with patch('subtitletools.core.workflow.is_space_language', return_value=True):
@@ -318,8 +318,8 @@ class TestSubtitleWorkflow:
         input_path = Path("test.mp4")
         mock_validate.return_value = input_path
 
-        with patch('subtitletools.core.workflow.SubWhisperTranscriber') as mock_transcriber_class:
-            with patch('subtitletools.core.workflow.SubtitleTranslator') as mock_translator_class:
+        with patch('subtitletools.core.workflow.SubWhisperTranscriber'):
+            with patch('subtitletools.core.workflow.SubtitleTranslator'):
                 with patch('subtitletools.core.workflow.SubtitleProcessor') as mock_processor_class:
                     with patch('subtitletools.core.workflow.CheckpointManager') as mock_checkpoint_class:
                         with patch('subtitletools.core.workflow.is_video_file', return_value=True):
@@ -429,7 +429,7 @@ class TestSubtitleWorkflow:
     def test_translate_subtitles_error(self) -> None:
         """Test _translate_subtitles with translation error."""
         with patch('subtitletools.core.workflow.SubWhisperTranscriber'):
-            with patch('subtitletools.core.workflow.SubtitleTranslator') as mock_translator_class:
+            with patch('subtitletools.core.workflow.SubtitleTranslator'):
                 with patch('subtitletools.core.workflow.SubtitleProcessor') as mock_processor_class:
 
                     # Mock processor to raise error
@@ -531,7 +531,7 @@ class TestSubtitleWorkflow:
         mock_space.return_value = True
 
         with patch('subtitletools.core.workflow.SubWhisperTranscriber'):
-            with patch('subtitletools.core.workflow.SubtitleTranslator') as mock_translator_class:
+            with patch('subtitletools.core.workflow.SubtitleTranslator'):
                 with patch('subtitletools.core.workflow.SubtitleProcessor') as mock_processor_class:
 
                     # Mock subtitle processor
@@ -632,25 +632,25 @@ class TestSubtitleWorkflow:
                 with patch('subtitletools.core.workflow.SubtitleProcessor'):
                     # Native processing is always available
 
-                        # Mock instances
-                        mock_transcriber = Mock()
-                        mock_transcriber.get_model_info.return_value = {"model": "small", "device": "cpu"}
-                        mock_transcriber_class.return_value = mock_transcriber
+                    # Mock instances
+                    mock_transcriber = Mock()
+                    mock_transcriber.get_model_info.return_value = {"model": "small", "device": "cpu"}
+                    mock_transcriber_class.return_value = mock_transcriber
 
-                        mock_translator = Mock()
-                        mock_translator.get_service_info.return_value = {"service": "google", "has_api_key": False}
-                        mock_translator_class.return_value = mock_translator
+                    mock_translator = Mock()
+                    mock_translator.get_service_info.return_value = {"service": "google", "has_api_key": False}
+                    mock_translator_class.return_value = mock_translator
 
-                        workflow = SubtitleWorkflow()
+                    workflow = SubtitleWorkflow()
 
-                        info = workflow.get_workflow_info()
+                    info = workflow.get_workflow_info()
 
-                        assert "transcriber" in info
-                        assert "translator" in info
-                        assert "postprocess_available" in info
-                        assert info["postprocess_available"] is True
-                        assert info["transcriber"]["model"] == "small"
-                        assert info["translator"]["service"] == "google"
+                    assert "transcriber" in info
+                    assert "translator" in info
+                    assert "postprocess_available" in info
+                    assert info["postprocess_available"] is True
+                    assert info["transcriber"]["model"] == "small"
+                    assert info["translator"]["service"] == "google"
 
 
 class TestWorkflowMissingCoverage:
@@ -798,7 +798,7 @@ class TestWorkflowMissingCoverage:
                             workflow = SubtitleWorkflow()
                             workflow._translate_subtitles = Mock(return_value=[])
 
-                            result = workflow.transcribe_and_translate(
+                            workflow.transcribe_and_translate(
                                 input_path="test.mp4",
                                 progress_callback=mock_progress_callback
                             )
@@ -813,7 +813,7 @@ class TestWorkflowMissingCoverage:
     def test_translate_subtitles_translation_error(self) -> None:
         """Test _translate_subtitles with translation error."""
         with patch('subtitletools.core.workflow.SubWhisperTranscriber'):
-            with patch('subtitletools.core.workflow.SubtitleTranslator') as mock_translator_class:
+            with patch('subtitletools.core.workflow.SubtitleTranslator'):
                 with patch('subtitletools.core.workflow.SubtitleProcessor') as mock_processor_class:
 
                     # Mock processor to raise error
@@ -904,7 +904,7 @@ class TestWorkflowMissingCoverage:
                         if "video1" in str(args[0]):
                             return {"status": "completed", "total_time": 120}
                         else:
-                            raise Exception("Processing failed")
+                            raise RuntimeError("Processing failed")
 
                     workflow.transcribe_and_translate = Mock(side_effect=mock_transcribe_and_translate)
 

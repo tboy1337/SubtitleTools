@@ -297,7 +297,7 @@ class TestConvertToMultipleEncodings:
             input_file.write_text(content, encoding='utf-8')
 
             with patch('os.path.exists', side_effect=lambda x: x != str(output_dir)):
-                result = convert_to_multiple_encodings(
+                convert_to_multiple_encodings(
                     str(input_file), str(output_dir), ["utf-8"]
                 )
 
@@ -532,7 +532,7 @@ class TestConvertToMultipleEncodingsExtensive:
 
             with patch('subtitletools.utils.encoding.detect_encoding', return_value='utf-8'):
                 with patch('subtitletools.utils.encoding.convert_subtitle_encoding', return_value=True):
-                    result = convert_to_multiple_encodings(
+                    convert_to_multiple_encodings(
                         tmp_path,
                         output_dir=output_dir,
                         target_encodings=["utf-8"]
@@ -582,7 +582,6 @@ class TestConvertToMultipleEncodingsExtensive:
 
             # Should remove the existing encoding suffix when creating new filename
             output_dir = Path(new_path).parent
-            expected_file = output_dir / f"{Path(new_path).stem.replace('-utf-8', '')}-cp1252.srt"
 
             # File might not exist due to conversion errors, but the function should have attempted
             assert isinstance(result, dict)
