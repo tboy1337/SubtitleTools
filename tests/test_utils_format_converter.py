@@ -3,6 +3,7 @@
 import tempfile
 from datetime import timedelta
 from pathlib import Path
+from typing import Generator
 
 import pytest
 import srt
@@ -16,7 +17,7 @@ from subtitletools.utils.format_converter import (
 
 
 @pytest.fixture
-def sample_subtitles():
+def sample_subtitles() -> list[srt.Subtitle]:
     """Create sample subtitles for testing."""
     return [
         srt.Subtitle(
@@ -41,7 +42,7 @@ def sample_subtitles():
 
 
 @pytest.fixture
-def temp_srt_file(sample_subtitles):
+def temp_srt_file(sample_subtitles: list[srt.Subtitle]) -> Generator[Path, None, None]:
     """Create a temporary SRT file."""
     with tempfile.NamedTemporaryFile(mode='w', suffix='.srt', delete=False) as f:
         f.write(srt.compose(sample_subtitles))
@@ -57,14 +58,14 @@ def temp_srt_file(sample_subtitles):
 class TestFormatConverter:
     """Test FormatConverter class."""
 
-    def test_init(self):
+    def test_init(self) -> None:
         """Test initialization."""
         converter = FormatConverter()
         assert 'srt' in converter.supported_formats
         assert 'vtt' in converter.supported_formats
         assert 'ass' in converter.supported_formats
 
-    def test_convert_subtitle_format_srt_to_vtt(self, temp_srt_file):
+    def test_convert_subtitle_format_srt_to_vtt(self, temp_srt_file: Path) -> None:
         """Test converting SRT to VTT."""
         converter = FormatConverter()
 
@@ -87,7 +88,7 @@ class TestFormatConverter:
             if output_file.exists():
                 output_file.unlink()
 
-    def test_convert_subtitle_format_srt_to_ass(self, temp_srt_file):
+    def test_convert_subtitle_format_srt_to_ass(self, temp_srt_file: Path) -> None:
         """Test converting SRT to ASS."""
         converter = FormatConverter()
 
@@ -112,7 +113,7 @@ class TestFormatConverter:
             if output_file.exists():
                 output_file.unlink()
 
-    def test_convert_subtitle_format_auto_output_file(self, temp_srt_file):
+    def test_convert_subtitle_format_auto_output_file(self, temp_srt_file: Path) -> None:
         """Test conversion with auto-generated output filename."""
         converter = FormatConverter()
 
@@ -128,21 +129,21 @@ class TestFormatConverter:
             if vtt_file.exists():
                 vtt_file.unlink()
 
-    def test_convert_nonexistent_file(self):
+    def test_convert_nonexistent_file(self) -> None:
         """Test converting nonexistent file."""
         converter = FormatConverter()
 
         success = converter.convert_subtitle_format('nonexistent.srt', 'vtt')
         assert not success
 
-    def test_convert_unsupported_format(self, temp_srt_file):
+    def test_convert_unsupported_format(self, temp_srt_file: Path) -> None:
         """Test converting to unsupported format."""
         converter = FormatConverter()
 
         success = converter.convert_subtitle_format(temp_srt_file, 'unsupported')
         assert not success
 
-    def test_read_subtitle_file_srt(self, temp_srt_file):
+    def test_read_subtitle_file_srt(self, temp_srt_file: Path) -> None:
         """Test reading SRT file."""
         converter = FormatConverter()
 
@@ -151,7 +152,7 @@ class TestFormatConverter:
         assert len(subtitles) == 3
         assert subtitles[0].content == "Hello, world!"
 
-    def test_parse_vtt_timestamp(self):
+    def test_parse_vtt_timestamp(self) -> None:
         """Test parsing VTT timestamps."""
         converter = FormatConverter()
 
@@ -163,7 +164,7 @@ class TestFormatConverter:
         td = converter._parse_vtt_timestamp("01:23.456")
         assert td == timedelta(minutes=1, seconds=23, milliseconds=456)
 
-    def test_parse_ass_timestamp(self):
+    def test_parse_ass_timestamp(self) -> None:
         """Test parsing ASS timestamps."""
         converter = FormatConverter()
 
@@ -171,7 +172,7 @@ class TestFormatConverter:
         td = converter._parse_ass_timestamp("1:23:45.67")
         assert td == timedelta(hours=1, minutes=23, seconds=45, milliseconds=670)
 
-    def test_format_vtt_timestamp(self):
+    def test_format_vtt_timestamp(self) -> None:
         """Test formatting VTT timestamps."""
         converter = FormatConverter()
 
@@ -179,7 +180,7 @@ class TestFormatConverter:
         formatted = converter._format_vtt_timestamp(td)
         assert formatted == "01:23:45.678"
 
-    def test_format_ass_timestamp(self):
+    def test_format_ass_timestamp(self) -> None:
         """Test formatting ASS timestamps."""
         converter = FormatConverter()
 
@@ -187,7 +188,7 @@ class TestFormatConverter:
         formatted = converter._format_ass_timestamp(td)
         assert formatted == "1:23:45.67"
 
-    def test_to_srt(self, sample_subtitles):
+    def test_to_srt(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test converting to SRT format."""
         converter = FormatConverter()
 
@@ -196,7 +197,7 @@ class TestFormatConverter:
         assert "1\n00:00:00,000 --> 00:00:02,000\nHello, world!" in result
         assert "2\n00:00:03,000 --> 00:00:05,000\nThis is a test\nwith multiple lines." in result
 
-    def test_to_vtt(self, sample_subtitles):
+    def test_to_vtt(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test converting to VTT format."""
         converter = FormatConverter()
 
@@ -206,7 +207,7 @@ class TestFormatConverter:
         assert '00:00:00.000 --> 00:00:02.000' in result
         assert 'Hello, world!' in result
 
-    def test_to_ass(self, sample_subtitles):
+    def test_to_ass(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test converting to ASS format."""
         converter = FormatConverter()
 
@@ -217,7 +218,7 @@ class TestFormatConverter:
         assert '[Events]' in result
         assert 'Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,Hello, world!' in result
 
-    def test_to_ssa(self, sample_subtitles):
+    def test_to_ssa(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test converting to SSA format."""
         converter = FormatConverter()
 
@@ -227,7 +228,7 @@ class TestFormatConverter:
         assert 'ScriptType: v4.00' in result  # SSA version
         assert '[V4 Styles]' in result        # SSA style section
 
-    def test_to_sami(self, sample_subtitles):
+    def test_to_sami(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test converting to SAMI format."""
         converter = FormatConverter()
 
@@ -243,7 +244,7 @@ class TestFormatConverter:
 class TestVTTParsing:
     """Test VTT format parsing."""
 
-    def test_parse_vtt_basic(self):
+    def test_parse_vtt_basic(self) -> None:
         """Test parsing basic VTT content."""
         vtt_content = """WEBVTT
 
@@ -260,7 +261,7 @@ Second subtitle
         assert subtitles[0].content == "Hello, world!"
         assert subtitles[1].content == "Second subtitle"
 
-    def test_parse_vtt_with_tags(self):
+    def test_parse_vtt_with_tags(self) -> None:
         """Test parsing VTT with style tags."""
         vtt_content = """WEBVTT
 
@@ -281,7 +282,7 @@ Second subtitle
 class TestASSParsing:
     """Test ASS format parsing."""
 
-    def test_parse_ass_basic(self):
+    def test_parse_ass_basic(self) -> None:
         """Test parsing basic ASS content."""
         ass_content = """[Script Info]
 Title: Test
@@ -302,7 +303,7 @@ Dialogue: 0,0:00:03.00,0:00:05.00,Default,,0,0,0,,Second subtitle
         assert subtitles[0].content == "Hello, world!"
         assert subtitles[1].content == "Second subtitle"
 
-    def test_parse_ass_with_formatting(self):
+    def test_parse_ass_with_formatting(self) -> None:
         """Test parsing ASS with formatting tags."""
         ass_content = """[Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -320,7 +321,7 @@ Dialogue: 0,0:00:03.00,0:00:05.00,Default,,0,0,0,,Line 1\\NLine 2
 class TestSAMIParsing:
     """Test SAMI format parsing."""
 
-    def test_parse_sami_basic(self):
+    def test_parse_sami_basic(self) -> None:
         """Test parsing basic SAMI content."""
         sami_content = """<SAMI>
 <HEAD>
@@ -350,7 +351,7 @@ class TestSAMIParsing:
 class TestModuleFunctions:
     """Test module-level functions."""
 
-    def test_convert_subtitle_format_function(self, temp_srt_file):
+    def test_convert_subtitle_format_function(self, temp_srt_file: Path) -> None:
         """Test convert_subtitle_format function."""
         output_file = temp_srt_file.with_suffix('.vtt')
 
@@ -363,7 +364,7 @@ class TestModuleFunctions:
             if output_file.exists():
                 output_file.unlink()
 
-    def test_batch_convert_subtitle_format_function(self, temp_srt_file):
+    def test_batch_convert_subtitle_format_function(self, temp_srt_file: Path) -> None:
         """Test batch_convert_subtitle_format function."""
         # Create a second temp file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.srt', delete=False) as f:
@@ -387,7 +388,7 @@ class TestModuleFunctions:
             if temp_path2.exists():
                 temp_path2.unlink()
 
-    def test_get_supported_formats_function(self):
+    def test_get_supported_formats_function(self) -> None:
         """Test get_supported_formats function."""
         formats = get_supported_formats()
 
@@ -400,7 +401,7 @@ class TestModuleFunctions:
 class TestFormatConverterEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_auto_detect_unknown_format(self):
+    def test_auto_detect_unknown_format(self) -> None:
         """Test auto-detection with unknown format."""
         converter = FormatConverter()
 
@@ -410,7 +411,7 @@ class TestFormatConverterEdgeCases:
         # Should return None for unrecognizable content
         assert result is None
 
-    def test_parse_vtt_malformed_timestamp(self):
+    def test_parse_vtt_malformed_timestamp(self) -> None:
         """Test parsing VTT with malformed timestamp."""
         vtt_content = """WEBVTT
 
@@ -423,7 +424,7 @@ Hello, world!
         # Should handle error gracefully and return empty list
         assert len(subtitles) == 0
 
-    def test_parse_ass_malformed_dialogue(self):
+    def test_parse_ass_malformed_dialogue(self) -> None:
         """Test parsing ASS with malformed dialogue line."""
         ass_content = """[Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -437,7 +438,7 @@ Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,Valid subtitle
         assert len(subtitles) == 1
         assert subtitles[0].content == "Valid subtitle"
 
-    def test_empty_subtitle_list(self):
+    def test_empty_subtitle_list(self) -> None:
         """Test format conversion with empty subtitle list."""
         converter = FormatConverter()
 
@@ -450,7 +451,7 @@ Dialogue: 0,0:00:00.00,0:00:02.00,Default,,0,0,0,,Valid subtitle
         result = converter._to_ass([])
         assert "[Events]" in result  # Should have proper header even with no events
 
-    def test_read_empty_file(self):
+    def test_read_empty_file(self) -> None:
         """Test reading empty file."""
         with tempfile.NamedTemporaryFile(mode='w', suffix='.srt', delete=False) as f:
             f.write("")  # Empty file

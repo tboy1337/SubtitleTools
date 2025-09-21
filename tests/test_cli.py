@@ -27,7 +27,7 @@ class TestParserCreation:
         """Test main parser creation."""
         parser = create_parser()
         assert isinstance(parser, argparse.ArgumentParser)
-        assert "SubtitleTools" in parser.description
+        assert parser.description is not None and "SubtitleTools" in parser.description
 
         # Test version argument
         with pytest.raises(SystemExit):

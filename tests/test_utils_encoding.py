@@ -364,7 +364,7 @@ class TestValidateEncoding:
     def test_validate_encoding_none(self) -> None:
         """Test validating None as encoding."""
         # This should raise TypeError and return False
-        assert validate_encoding(None) is False  # type: ignore[arg-type]
+        assert validate_encoding(None) is False
 
     def test_validate_encoding_empty_string(self) -> None:
         """Test validating empty string as encoding."""
@@ -836,7 +836,7 @@ class TestAdditionalEncodingCoverage:
 
             assert isinstance(info, dict)
             assert info["detected_encoding"] is None
-            assert info["file_size"] > 0
+            assert isinstance(info["file_size"], int) and info["file_size"] > 0
             assert info["confidence"] is None
             assert info["readable"] is False
 

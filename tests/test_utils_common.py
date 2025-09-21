@@ -314,7 +314,7 @@ class TestValidateFileExists:
     def test_validate_file_exists_none_path(self) -> None:
         """Test validating None path."""
         with pytest.raises(ValueError, match="File path cannot be empty"):
-            validate_file_exists(None)  # type: ignore[arg-type]
+            validate_file_exists(None)
 
     def test_validate_file_exists_nonexistent(self) -> None:
         """Test validating non-existent file."""
@@ -465,7 +465,7 @@ class TestThreadSafeCounter:
         counter = ThreadSafeCounter()
         results = []
 
-        def worker():
+        def worker() -> None:
             for _ in range(100):
                 results.append(counter.increment())
 

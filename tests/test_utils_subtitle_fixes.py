@@ -3,6 +3,7 @@
 import tempfile
 from datetime import timedelta
 from pathlib import Path
+from typing import Generator
 from unittest.mock import patch
 
 import pytest
@@ -16,7 +17,7 @@ from subtitletools.utils.subtitle_fixes import (
 
 
 @pytest.fixture
-def sample_subtitles():
+def sample_subtitles() -> list[srt.Subtitle]:
     """Create sample subtitles for testing."""
     return [
         srt.Subtitle(
@@ -47,7 +48,7 @@ def sample_subtitles():
 
 
 @pytest.fixture
-def temp_subtitle_file(sample_subtitles):
+def temp_subtitle_file(sample_subtitles: list[srt.Subtitle]) -> Generator[Path, None, None]:
     """Create a temporary subtitle file."""
     with tempfile.NamedTemporaryFile(mode='w', suffix='.srt', delete=False) as f:
         f.write(srt.compose(sample_subtitles))
@@ -63,7 +64,7 @@ def temp_subtitle_file(sample_subtitles):
 class TestSubtitleFixer:
     """Test SubtitleFixer class."""
 
-    def test_init(self):
+    def test_init(self) -> None:
         """Test initialization."""
         fixer = SubtitleFixer()
         assert fixer.max_chars_per_line == 42
@@ -71,7 +72,7 @@ class TestSubtitleFixer:
         assert fixer.min_display_time_ms == 500
         assert fixer.max_display_time_ms == 7000
 
-    def test_fix_overlapping_times(self, sample_subtitles):
+    def test_fix_overlapping_times(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test fixing overlapping subtitle times."""
         fixer = SubtitleFixer()
 
@@ -81,7 +82,7 @@ class TestSubtitleFixer:
         # Check that overlapping time was fixed
         assert result[0].end < result[1].start
 
-    def test_fix_short_display_times(self, sample_subtitles):
+    def test_fix_short_display_times(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test fixing short display times."""
         fixer = SubtitleFixer()
 
@@ -93,7 +94,7 @@ class TestSubtitleFixer:
             # Allow some tolerance for minimum display time
             assert duration >= 0.4  # Slightly less than 0.5 due to gap constraints
 
-    def test_fix_long_display_times(self, sample_subtitles):
+    def test_fix_long_display_times(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test fixing long display times."""
         fixer = SubtitleFixer()
 
@@ -104,7 +105,7 @@ class TestSubtitleFixer:
             duration = (subtitle.end - subtitle.start).total_seconds()
             assert duration <= fixer.max_display_time_ms / 1000.0
 
-    def test_fix_unneeded_spaces(self, sample_subtitles):
+    def test_fix_unneeded_spaces(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test removing unneeded spaces."""
         fixer = SubtitleFixer()
 
@@ -116,7 +117,7 @@ class TestSubtitleFixer:
             assert not subtitle.content.startswith(" ")
             assert not subtitle.content.endswith(" ")
 
-    def test_fix_common_errors(self, sample_subtitles):
+    def test_fix_common_errors(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test applying common fixes."""
         fixer = SubtitleFixer()
 
@@ -128,7 +129,7 @@ class TestSubtitleFixer:
         # Check that spaces were fixed in subtitle 2
         assert "   " not in result[1].content
 
-    def test_remove_hearing_impaired(self, sample_subtitles):
+    def test_remove_hearing_impaired(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test removing hearing impaired text."""
         fixer = SubtitleFixer()
 
@@ -142,7 +143,7 @@ class TestSubtitleFixer:
             assert "[MUSIC PLAYING]" not in subtitle.content
             assert "(NARRATOR):" not in subtitle.content
 
-    def test_split_long_lines(self, sample_subtitles):
+    def test_split_long_lines(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test splitting long lines."""
         fixer = SubtitleFixer()
 
@@ -157,7 +158,7 @@ class TestSubtitleFixer:
             for line in lines:
                 assert len(line) <= fixer.max_chars_per_line * 1.2  # Some tolerance
 
-    def test_apply_ocr_fixes(self, sample_subtitles):
+    def test_apply_ocr_fixes(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test applying OCR fixes."""
         fixer = SubtitleFixer()
 
@@ -172,7 +173,7 @@ class TestSubtitleFixer:
             if "hero" in subtitle.content:
                 assert "liero" not in subtitle.content
 
-    def test_fix_punctuation(self, sample_subtitles):
+    def test_fix_punctuation(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test fixing punctuation."""
         fixer = SubtitleFixer()
 
@@ -188,7 +189,7 @@ class TestSubtitleFixer:
 class TestApplySubtitleFixes:
     """Test apply_subtitle_fixes function."""
 
-    def test_apply_single_operation(self, temp_subtitle_file):
+    def test_apply_single_operation(self, temp_subtitle_file: Path) -> None:
         """Test applying a single operation."""
         success = apply_subtitle_fixes(temp_subtitle_file, ["fixcommonerrors"])
         assert success
@@ -200,13 +201,13 @@ class TestApplySubtitleFixes:
         subtitles = list(srt.parse(content))
         assert len(subtitles) > 0
 
-    def test_apply_multiple_operations(self, temp_subtitle_file):
+    def test_apply_multiple_operations(self, temp_subtitle_file: Path) -> None:
         """Test applying multiple operations."""
         operations = ["fixcommonerrors", "removetextforhi", "ocrfix"]
         success = apply_subtitle_fixes(temp_subtitle_file, operations)
         assert success
 
-    def test_unknown_operation(self, temp_subtitle_file):
+    def test_unknown_operation(self, temp_subtitle_file: Path) -> None:
         """Test handling unknown operation."""
         with patch('subtitletools.utils.subtitle_fixes.logger') as mock_logger:
             success = apply_subtitle_fixes(temp_subtitle_file, ["unknown_operation"])
@@ -215,12 +216,12 @@ class TestApplySubtitleFixes:
         assert success
         mock_logger.warning.assert_called()
 
-    def test_nonexistent_file(self):
+    def test_nonexistent_file(self) -> None:
         """Test with nonexistent file."""
         success = apply_subtitle_fixes("nonexistent.srt", ["fixcommonerrors"])
         assert not success
 
-    def test_output_file_specified(self, temp_subtitle_file):
+    def test_output_file_specified(self, temp_subtitle_file: Path) -> None:
         """Test with output file specified."""
         with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as f:
             output_path = Path(f.name)
@@ -247,7 +248,7 @@ class TestApplySubtitleFixes:
 class TestBatchApplySubtitleFixes:
     """Test batch_apply_subtitle_fixes function."""
 
-    def test_batch_processing(self, temp_subtitle_file):
+    def test_batch_processing(self, temp_subtitle_file: Path) -> None:
         """Test batch processing multiple files."""
         # Create a second temp file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.srt', delete=False) as f:
@@ -265,7 +266,7 @@ class TestBatchApplySubtitleFixes:
             if temp_path2.exists():
                 temp_path2.unlink()
 
-    def test_batch_with_failure(self, temp_subtitle_file):
+    def test_batch_with_failure(self, temp_subtitle_file: Path) -> None:
         """Test batch processing with one failure."""
         files = [temp_subtitle_file, "nonexistent.srt"]
         results = batch_apply_subtitle_fixes(files, ["fixcommonerrors"])
@@ -278,7 +279,7 @@ class TestBatchApplySubtitleFixes:
 class TestSubtitleFixerEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_empty_subtitles(self):
+    def test_empty_subtitles(self) -> None:
         """Test with empty subtitle list."""
         fixer = SubtitleFixer()
 
@@ -288,7 +289,7 @@ class TestSubtitleFixerEdgeCases:
         result = fixer.remove_hearing_impaired([])
         assert not result
 
-    def test_subtitle_with_no_content(self):
+    def test_subtitle_with_no_content(self) -> None:
         """Test with subtitle containing no content."""
         subtitles = [
             srt.Subtitle(
@@ -305,7 +306,7 @@ class TestSubtitleFixerEdgeCases:
         # Empty subtitle should be removed
         assert len(result) == 0
 
-    def test_subtitle_only_whitespace(self):
+    def test_subtitle_only_whitespace(self) -> None:
         """Test with subtitle containing only whitespace."""
         subtitles = [
             srt.Subtitle(
@@ -322,7 +323,7 @@ class TestSubtitleFixerEdgeCases:
         # Whitespace-only subtitle should be removed
         assert len(result) == 0
 
-    def test_find_split_points_no_good_points(self):
+    def test_find_split_points_no_good_points(self) -> None:
         """Test _find_split_points with no good split points."""
         fixer = SubtitleFixer()
 
@@ -332,7 +333,7 @@ class TestSubtitleFixerEdgeCases:
 
         assert not split_points
 
-    def test_find_split_points_line_breaks(self):
+    def test_find_split_points_line_breaks(self) -> None:
         """Test _find_split_points with line breaks."""
         fixer = SubtitleFixer()
 
@@ -342,7 +343,7 @@ class TestSubtitleFixerEdgeCases:
         assert len(split_points) == 2  # Two split points for three lines
         assert split_points[0] == len("First line\n")
 
-    def test_find_split_points_sentences(self):
+    def test_find_split_points_sentences(self) -> None:
         """Test _find_split_points with sentence endings."""
         fixer = SubtitleFixer()
 
@@ -351,7 +352,7 @@ class TestSubtitleFixerEdgeCases:
 
         assert len(split_points) >= 1  # At least one split point
 
-    def test_context_sensitive_ocr_case_insensitive(self):
+    def test_context_sensitive_ocr_case_insensitive(self) -> None:
         """Test context-sensitive OCR fixes are case insensitive."""
         fixer = SubtitleFixer()
 
@@ -362,7 +363,7 @@ class TestSubtitleFixerEdgeCases:
         assert "the hero" in result.lower()
         assert "the villain" in result.lower()
 
-    def test_split_subtitle_no_split_needed(self):
+    def test_split_subtitle_no_split_needed(self) -> None:
         """Test _split_subtitle when no split is needed."""
         fixer = SubtitleFixer()
 

@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Any, Generator
 from unittest.mock import patch
 
 import pytest
@@ -96,7 +97,7 @@ class TestDirectoryFunctions:
     @patch('os.name', 'nt')
     @patch.dict(os.environ, {}, clear=True)  # Clear APPDATA
     @patch('os.path.expanduser')
-    def test_get_app_data_dir_windows_no_appdata(self, mock_expanduser) -> None:
+    def test_get_app_data_dir_windows_no_appdata(self, mock_expanduser: Any) -> None:
         """Test getting app data directory on Windows without APPDATA."""
         mock_expanduser.return_value = "C:\\Users\\Test"
         result = settings.get_app_data_dir()
@@ -204,7 +205,7 @@ class TestDirectoryEnsurance:
     """Test directory creation functionality."""
 
     @patch('pathlib.Path.mkdir')
-    def test_ensure_directories_called_on_import(self, mock_mkdir) -> None:
+    def test_ensure_directories_called_on_import(self, mock_mkdir: Any) -> None:
         """Test that _ensure_directories is called and creates directories."""
         # Reset the module to trigger directory creation
         import importlib
@@ -215,7 +216,7 @@ class TestDirectoryEnsurance:
 
 
 @pytest.fixture(autouse=True)
-def cleanup_config():
+def cleanup_config() -> Generator[None, None, None]:
     """Clean up configuration after each test."""
     yield
     settings.reset_config()

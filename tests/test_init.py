@@ -1,5 +1,6 @@
 """Tests for main __init__.py module."""
 
+from typing import Any
 from unittest.mock import patch
 
 
@@ -33,7 +34,7 @@ class TestMainInit:
         assert 'SubtitleWorkflow' in subtitletools.__all__
 
     @patch('subtitletools.core.transcription.SubWhisperTranscriber')
-    def test_import_error_handling(self, mock_transcriber) -> None:
+    def test_import_error_handling(self, mock_transcriber: Any) -> None:
         """Test that ImportError is handled gracefully."""
         # Make the import fail
         mock_transcriber.side_effect = ImportError("Module not found")

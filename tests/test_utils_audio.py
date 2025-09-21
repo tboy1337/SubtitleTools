@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import threading
 from pathlib import Path
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -193,7 +194,7 @@ class TestExtractAudio:
 
         try:
             # Mock the output file creation by patching the subprocess to create the file
-            def side_effect(*args, **kwargs):
+            def side_effect(*args: Any, **kwargs: Any) -> Mock:
                 with open(output_path, 'wb') as f:
                     f.write(b"fake audio content" * 100)
                 return mock_result
@@ -231,7 +232,7 @@ class TestExtractAudio:
             # Mock the output file creation by creating it in the side effect
             created_files = []
 
-            def side_effect(*args, **kwargs):
+            def side_effect(*args: Any, **kwargs: Any) -> Mock:
                 # Extract output path from FFmpeg command (last arg before -y)
                 command = args[0]
                 output_path = command[-2]  # Second to last argument is output path
@@ -352,7 +353,7 @@ class TestExtractAudio:
             output_path = tmp_audio.name
 
         try:
-            def side_effect(*args, **kwargs):
+            def side_effect(*args: Any, **kwargs: Any) -> Mock:
                 with open(output_path, 'wb') as f:
                     f.write(b"small")  # < 1000 bytes
                 return mock_result
@@ -702,14 +703,14 @@ class TestThreadSafety:
 
         results = []
 
-        def worker():
+        def worker() -> None:
             with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as tmp:
                 tmp.write(b"fake video")
                 video_path = tmp.name
 
             try:
                 # Mock output file creation
-                def create_output(*args, **kwargs):
+                def create_output(*args: Any, **kwargs: Any) -> Mock:
                     # FFmpeg command structure: [ffmpeg, "-i", input, "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", output, "-y"]
                     output_path = args[0][-2]  # Second to last argument is output path
                     with open(output_path, 'wb') as f:

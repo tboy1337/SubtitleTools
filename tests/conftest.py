@@ -4,7 +4,7 @@ import os
 import tempfile
 from datetime import timedelta
 from pathlib import Path
-from typing import Generator
+from typing import Any, Generator
 from unittest.mock import patch
 
 import pytest
@@ -78,7 +78,7 @@ def sample_srt_file(temp_dir: Path, sample_srt_content: str) -> Path:  # pylint:
 
 
 @pytest.fixture
-def sample_subtitles() -> list:
+def sample_subtitles() -> list[srt.Subtitle]:
     """Create sample subtitle objects for testing."""
     return [
         srt.Subtitle(
@@ -117,7 +117,7 @@ def mock_env_clean() -> Generator[None, None, None]:
 
 
 @pytest.fixture
-def mock_whisper_model():
+def mock_whisper_model() -> Any:
     """Mock Whisper model for testing."""
     with patch('whisper.load_model') as mock_load:
         mock_model = mock_load.return_value
@@ -135,7 +135,7 @@ def mock_whisper_model():
 
 
 @pytest.fixture
-def mock_requests():
+def mock_requests() -> Any:
     """Mock requests for translation testing."""
     with patch('requests.Session') as mock_session:
         mock_response = mock_session.return_value.get.return_value
@@ -148,7 +148,7 @@ def mock_requests():
 
 
 # Utility functions for tests
-def create_test_subtitles(count: int = 3) -> list:
+def create_test_subtitles(count: int = 3) -> list[srt.Subtitle]:
     """Create test subtitles for unit testing."""
     subtitles = []
     for i in range(1, count + 1):

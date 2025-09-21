@@ -116,7 +116,7 @@ class TestSubtitleProcessor:
         with pytest.raises(SubtitleError, match="Failed to decode subtitle file"):
             self.processor.parse_file(str(srt_file))
 
-    def test_save_file_success(self, temp_dir: Path, sample_subtitles: list) -> None:
+    def test_save_file_success(self, temp_dir: Path, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test saving subtitles to file successfully."""
         output_file = temp_dir / "output.srt"
 
@@ -127,7 +127,7 @@ class TestSubtitleProcessor:
         assert "Hello world" in content
         assert "00:00:01,000 --> 00:00:03,000" in content
 
-    def test_save_file_custom_encoding(self, temp_dir: Path, sample_subtitles: list) -> None:
+    def test_save_file_custom_encoding(self, temp_dir: Path, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test saving file with custom encoding."""
         output_file = temp_dir / "output.srt"
 
@@ -139,7 +139,7 @@ class TestSubtitleProcessor:
         decoded = content.decode("latin-1")
         assert "Hello world" in decoded
 
-    def test_save_file_directory_creation(self, temp_dir: Path, sample_subtitles: list) -> None:
+    def test_save_file_directory_creation(self, temp_dir: Path, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test saving file with directory creation."""
         output_file = temp_dir / "subdir" / "output.srt"
 
@@ -148,7 +148,7 @@ class TestSubtitleProcessor:
         assert output_file.exists()
         assert output_file.parent.exists()
 
-    def test_save_file_write_error(self, sample_subtitles: list) -> None:
+    def test_save_file_write_error(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test saving file with write error."""
         # Use a path that will definitely fail on Windows
         invalid_path = "C:\\invalid|<>:?*/path/output.srt"
@@ -156,7 +156,7 @@ class TestSubtitleProcessor:
         with pytest.raises(SubtitleError, match="Error saving subtitle file"):
             self.processor.save_file(sample_subtitles, invalid_path)
 
-    def test_extract_text(self, sample_subtitles: list) -> None:
+    def test_extract_text(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test extracting text from subtitles."""
         text_list = self.processor.extract_text(sample_subtitles)
 
@@ -267,7 +267,7 @@ class TestSubtitleProcessor:
         assert "Hello\nHola" in result[0].content
         assert result[1].content == "Extra"
 
-    def test_filter_subtitles_min_duration(self, sample_subtitles: list) -> None:
+    def test_filter_subtitles_min_duration(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test filtering subtitles by minimum duration."""
         # Add a very short subtitle
         short_subtitle = srt.Subtitle(
@@ -280,7 +280,7 @@ class TestSubtitleProcessor:
         assert len(result) == 3  # Should exclude the short subtitle
         assert all(sub.content != "Short" for sub in result)
 
-    def test_filter_subtitles_max_duration(self, sample_subtitles: list) -> None:
+    def test_filter_subtitles_max_duration(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test filtering subtitles by maximum duration."""
         # Add a very long subtitle
         long_subtitle = srt.Subtitle(
@@ -293,7 +293,7 @@ class TestSubtitleProcessor:
         assert len(result) == 3  # Should exclude the long subtitle
         assert all(sub.content != "Long" for sub in result)
 
-    def test_filter_subtitles_min_length(self, sample_subtitles: list) -> None:
+    def test_filter_subtitles_min_length(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test filtering subtitles by minimum character length."""
         result = self.processor.filter_subtitles(sample_subtitles, min_length=20)
 
@@ -301,7 +301,7 @@ class TestSubtitleProcessor:
         assert len(result) == 2
         assert all(len(sub.content) >= 20 for sub in result)
 
-    def test_filter_subtitles_max_length(self, sample_subtitles: list) -> None:
+    def test_filter_subtitles_max_length(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test filtering subtitles by maximum character length."""
         result = self.processor.filter_subtitles(sample_subtitles, max_length=15)
 
@@ -309,7 +309,7 @@ class TestSubtitleProcessor:
         assert len(result) == 1
         assert result[0].content == "Hello world"
 
-    def test_filter_subtitles_regex_pattern(self, sample_subtitles: list) -> None:
+    def test_filter_subtitles_regex_pattern(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test filtering subtitles by regex pattern."""
         result = self.processor.filter_subtitles(sample_subtitles, regex_pattern=r"test|formatting")
 
@@ -319,14 +319,14 @@ class TestSubtitleProcessor:
         assert "This is a test subtitle" in contents
         assert "With multiple lines\nand formatting" in contents
 
-    def test_filter_subtitles_no_regex_match(self, sample_subtitles: list) -> None:
+    def test_filter_subtitles_no_regex_match(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test filtering subtitles with regex that matches nothing."""
         result = self.processor.filter_subtitles(sample_subtitles, regex_pattern=r"nonexistent")
 
         # Should match nothing
         assert len(result) == 0
 
-    def test_adjust_timing_offset(self, sample_subtitles: list) -> None:
+    def test_adjust_timing_offset(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test adjusting timing with offset."""
         result = self.processor.adjust_timing(sample_subtitles, offset_seconds=5.0)
 
@@ -335,7 +335,7 @@ class TestSubtitleProcessor:
         assert result[0].end == timedelta(seconds=8)    # 3 + 5
         assert result[1].start == timedelta(seconds=9)  # 4 + 5
 
-    def test_adjust_timing_speed_factor(self, sample_subtitles: list) -> None:
+    def test_adjust_timing_speed_factor(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test adjusting timing with speed factor."""
         result = self.processor.adjust_timing(sample_subtitles, speed_factor=2.0)
 
@@ -344,7 +344,7 @@ class TestSubtitleProcessor:
         assert result[0].end == timedelta(seconds=1.5)     # 3 / 2
         assert result[1].start == timedelta(seconds=2.0)   # 4 / 2
 
-    def test_adjust_timing_combined(self, sample_subtitles: list) -> None:
+    def test_adjust_timing_combined(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test adjusting timing with both offset and speed factor."""
         result = self.processor.adjust_timing(sample_subtitles, offset_seconds=2.0, speed_factor=0.5)
 
@@ -352,19 +352,19 @@ class TestSubtitleProcessor:
         assert result[0].start == timedelta(seconds=4.0)   # (1 / 0.5) + 2
         assert result[0].end == timedelta(seconds=8.0)     # (3 / 0.5) + 2
 
-    def test_adjust_timing_negative_times_clamped(self, sample_subtitles: list) -> None:
+    def test_adjust_timing_negative_times_clamped(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test that negative times are clamped to zero."""
         result = self.processor.adjust_timing(sample_subtitles, offset_seconds=-10.0)
 
         assert all(sub.start >= timedelta(0) for sub in result)
         assert all(sub.end >= timedelta(0) for sub in result)
 
-    def test_adjust_timing_zero_speed_factor(self, sample_subtitles: list) -> None:
+    def test_adjust_timing_zero_speed_factor(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test adjusting timing with zero speed factor causes error."""
         with pytest.raises(ZeroDivisionError):
             self.processor.adjust_timing(sample_subtitles, speed_factor=0.0)
 
-    def test_get_statistics(self, sample_subtitles: list) -> None:
+    def test_get_statistics(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test getting subtitle statistics."""
         stats = self.processor.get_statistics(sample_subtitles)
 
@@ -387,7 +387,7 @@ class TestSubtitleProcessor:
         assert stats["total_characters"] == 0
         assert stats["average_characters"] == 0.0
 
-    def test_validate_subtitles_valid(self, sample_subtitles: list) -> None:
+    def test_validate_subtitles_valid(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test validating valid subtitles."""
         issues = self.processor.validate_subtitles(sample_subtitles)
 
@@ -473,7 +473,7 @@ class TestSubtitleProcessorEdgeCases:
         # Empty translated line should result in empty or minimal content
         assert len(result[0].content) <= len("Hello")  # Should not contain original
 
-    def test_filter_subtitles_all_filtered(self, sample_subtitles: list) -> None:
+    def test_filter_subtitles_all_filtered(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test filtering where all subtitles are filtered out."""
         result = self.processor.filter_subtitles(sample_subtitles, min_length=1000)
 
@@ -872,7 +872,7 @@ class TestSubtitleProcessorEdgeCases:
 
     def test_merge_subtitles_empty(self) -> None:
         """Test merging with empty subtitle lists."""
-        subtitles1 = []
+        subtitles1: list[srt.Subtitle] = []
         subtitles2 = [
             srt.Subtitle(
                 index=1,
