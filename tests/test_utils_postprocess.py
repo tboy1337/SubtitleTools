@@ -252,10 +252,9 @@ class TestBatchPostprocess:
         # Create two temp files
         temp_files = []
         for i in range(2):
-            tmp = tempfile.NamedTemporaryFile(suffix='.srt', delete=False)
-            tmp.write(f"1\n00:00:0{i+1},000 --> 00:00:0{i+2},000\nTest subtitle {i+1}\n".encode())
-            tmp.close()
-            temp_files.append(tmp.name)
+            with tempfile.NamedTemporaryFile(suffix='.srt', delete=False) as tmp:
+                tmp.write(f"1\n00:00:0{i+1},000 --> 00:00:0{i+2},000\nTest subtitle {i+1}\n".encode())
+                temp_files.append(tmp.name)
 
         try:
             results = batch_postprocess(

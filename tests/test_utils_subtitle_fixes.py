@@ -286,7 +286,7 @@ class TestSubtitleFixerEdgeCases:
         assert result == []
 
         result = fixer.remove_hearing_impaired([])
-        assert result == []
+        assert not result
 
     def test_subtitle_with_no_content(self):
         """Test with subtitle containing no content."""
@@ -330,7 +330,7 @@ class TestSubtitleFixerEdgeCases:
         content = "shorttext"
         split_points = fixer._find_split_points(content)
 
-        assert split_points == []
+        assert not split_points
 
     def test_find_split_points_line_breaks(self):
         """Test _find_split_points with line breaks."""

@@ -903,8 +903,7 @@ class TestWorkflowMissingCoverage:
                     def mock_transcribe_and_translate(*args, **kwargs):
                         if "video1" in str(args[0]):
                             return {"status": "completed", "total_time": 120}
-                        else:
-                            raise RuntimeError("Processing failed")
+                        raise RuntimeError("Processing failed")
 
                     workflow.transcribe_and_translate = Mock(side_effect=mock_transcribe_and_translate)
 
