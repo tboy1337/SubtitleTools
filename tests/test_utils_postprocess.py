@@ -2,7 +2,6 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 from subtitletools.utils.postprocess import (
     apply_common_fixes,
@@ -57,7 +56,7 @@ class TestApplySubtitleEditPostprocess:
 
         try:
             result = apply_subtitle_edit_postprocess(
-                tmp_path, 
+                tmp_path,
                 ["fixcommonerrors", "removetextforhi", "ocrfix"]
             )
 

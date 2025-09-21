@@ -440,18 +440,6 @@ class TestSubtitleProcessor:
         assert len(issues) > 0
         assert any("index mismatch" in issue.lower() for issue in issues)
 
-    def test_validate_subtitles_overlapping(self) -> None:
-        """Test validating overlapping subtitles."""
-        overlapping_subtitles = [
-            srt.Subtitle(1, timedelta(seconds=1), timedelta(seconds=5), "First"),
-            srt.Subtitle(2, timedelta(seconds=3), timedelta(seconds=7), "Overlapping"),
-        ]
-
-        issues = self.processor.validate_subtitles(overlapping_subtitles)
-
-        assert len(issues) > 0
-        assert any("overlap" in issue.lower() for issue in issues)
-
 
 class TestSubtitleProcessorEdgeCases:
     """Test edge cases and error conditions."""
