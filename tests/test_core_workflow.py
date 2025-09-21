@@ -650,7 +650,7 @@ class TestSubtitleWorkflow:
                     assert "translator" in info
                     assert "postprocess_available" in info
                     assert info["postprocess_available"] is True
-                    assert isinstance(info, dict) 
+                    assert isinstance(info, dict)
                     transcriber_info = cast(dict[str, Any], info["transcriber"])
                     translator_info = cast(dict[str, Any], info["translator"])
                     assert transcriber_info["model"] == "small"
@@ -935,7 +935,8 @@ class TestWorkflowMissingCoverage:
 
                     workflow = SubtitleWorkflow()
 
-                    setattr(workflow, 'translate_existing_subtitles', Mock(return_value={"status": "completed", "total_time": 30}))
+                    mock_translate = Mock(return_value={"status": "completed", "total_time": 30})
+                    setattr(workflow, 'translate_existing_subtitles', mock_translate)
 
                     with patch('subtitletools.core.workflow.is_video_file', return_value=False):
                         with patch('subtitletools.core.workflow.is_audio_file', return_value=False):
@@ -945,7 +946,7 @@ class TestWorkflowMissingCoverage:
                             )
 
                     assert len(result) >= 1
-                    getattr(workflow, 'translate_existing_subtitles').assert_called_once()
+                    mock_translate.assert_called_once_with()
 
     def test_get_workflow_info_native_processing(self) -> None:
         """Test get_workflow_info with native processing (always available)."""
