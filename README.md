@@ -22,7 +22,7 @@ SubtitleTools provides a complete subtitle processing pipeline:
 - **Batch Translation**: Translate multiple subtitle files at once
 
 ### 🔤 Encoding Conversion
-- **Multiple Encodings**: Support for 40+ character encodings
+- **Multiple Encodings**: Support for 28+ character encodings
 - **Language-Specific Recommendations**: Smart encoding suggestions based on language
 - **Batch Encoding**: Convert multiple files to various encodings
 - **Auto-Detection**: Automatic source encoding detection
@@ -182,7 +182,7 @@ All post-processing is performed using native Python implementations for maximum
 ### Translation Options  
 - `--src-lang` - Source language code
 - `--target-lang` - Target language code
-- `--mode` - Translation mode (naive, split)
+- `--service` - Translation service (google, google_cloud)
 - `--api-key` - Translation service API key
 - `--both` - Keep both original and translated text
 
@@ -192,7 +192,7 @@ All post-processing is performed using native Python implementations for maximum
 - `--auto-split-long-lines` - Split long lines automatically
 - `--fix-punctuation` - Fix punctuation issues
 - `--ocr-fix` - Apply OCR error corrections
-- `--convert-to` - Convert to different format (srt, ass, vtt)
+- `--convert-to` - Convert to different format (srt, ass, ssa, vtt, sami)
 
 ## 🌐 Supported Languages
 
@@ -211,18 +211,11 @@ SubtitleTools supports 100+ languages for transcription and 50+ for translation,
 | Arabic | ✅ | ✅ | ar |
 | Thai | ✅ | ✅ | th |
 
-[Complete language list](docs/languages.md)
+*For a complete list of supported languages, check the Whisper documentation for transcription and Google Translate documentation for translation support.*
 
 ## 🔧 Configuration
 
-### Environment Variables
-- `SUBTITLETOOLS_API_KEY` - Default translation API key
-- `SUBTITLETOOLS_LOG_LEVEL` - Logging level (DEBUG, INFO, WARNING, ERROR)
-- `SUBTITLETOOLS_TEMP_DIR` - Custom temporary directory
-
-### Configuration Files
-- `~/.subtitletools/config.yaml` - User configuration
-- `subtitletools.yaml` - Project-specific configuration
+Configuration is handled through command-line arguments. The tool automatically creates necessary directories in your system's application data folder (e.g., `~/.subtitletools/` on Unix-like systems or `%APPDATA%/SubtitleTools/` on Windows) for caching and temporary files.
 
 ## 🧪 Development
 
@@ -274,11 +267,10 @@ mypy src/
 - openai-whisper (transcription)
 - torch (ML processing)
 - scipy, numpy (audio processing) 
+- tqdm (progress bars)
 - pyexecjs (translation engine)
 - srt (subtitle parsing)
 - requests (API communication)
-
-### Optional Dependencies
 - jieba (Chinese text segmentation)
 
 ## 📄 License
