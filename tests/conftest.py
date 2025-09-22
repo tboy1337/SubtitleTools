@@ -26,9 +26,17 @@ def test_data_dir() -> Generator[Path, None, None]:
 
     yield test_data_path
 
-    # Clean up any files created during the test
+    # Clean up only temporary files created during tests, preserve permanent test data
+    # List of permanent test files that should NEVER be deleted
+    permanent_files = {
+        "test_video.mp4",
+        "test_video_transcript.txt",
+        # Add any other permanent test files here
+    }
+    
     for file in test_data_path.glob("*"):
-        if file.is_file():
+        if file.is_file() and file.name not in permanent_files:
+            # Only delete files that are NOT permanent test data
             try:
                 file.unlink()
             except (OSError, PermissionError):
