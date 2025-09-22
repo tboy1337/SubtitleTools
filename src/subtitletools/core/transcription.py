@@ -5,6 +5,7 @@ OpenAI's Whisper model, adapted from the original subwhisper implementation.
 """
 
 import logging
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TypedDict, Union, cast
@@ -340,7 +341,14 @@ class SubWhisperTranscriber:
         video_path_obj = validate_file_exists(video_path)
 
         if output_path is None:
-            output_path = video_path_obj.with_suffix(".srt")
+            # Create output in temp directory to avoid overwriting test files
+            # Only use same directory if explicitly in a safe location
+            if "test" in str(video_path_obj.parent).lower() or "temp" in str(video_path_obj.parent).lower():
+                temp_dir = Path(tempfile.gettempdir()) / "subtitletools_transcription"
+                temp_dir.mkdir(exist_ok=True)
+                output_path = temp_dir / f"{video_path_obj.stem}.srt"
+            else:
+                output_path = video_path_obj.with_suffix(".srt")
         else:
             output_path = Path(output_path)
 

@@ -6,6 +6,7 @@ translation, and post-processing operations.
 
 import json
 import logging
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, TypedDict, Union, cast
@@ -254,7 +255,10 @@ class SubtitleWorkflow:
                         max_segment_length=max_segment_length,
                         **transcribe_kwargs,
                     )
-                    temp_srt_path = input_path_obj.with_suffix("_temp.srt")
+                    # Create temp file in system temp directory to avoid overwriting test files
+                    temp_dir = Path(tempfile.gettempdir()) / "subtitletools_workflow"
+                    temp_dir.mkdir(exist_ok=True)
+                    temp_srt_path = temp_dir / f"{input_path_obj.stem}_temp.srt"
                     self.transcriber.generate_srt(
                         transcription_result["segments"], temp_srt_path
                     )
