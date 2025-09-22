@@ -215,3 +215,6 @@ coverage.xml
 
 # Pylint report
 pylint-report.txt
+
+# Output files
+output/
