@@ -33,7 +33,7 @@ def test_data_dir() -> Generator[Path, None, None]:
         "test_video_transcript.txt",
         # Add any other permanent test files here
     }
-    
+
     for file in test_data_path.glob("*"):
         if file.is_file() and file.name not in permanent_files:
             # Only delete files that are NOT permanent test data
