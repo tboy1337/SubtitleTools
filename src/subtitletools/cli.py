@@ -444,7 +444,9 @@ def handle_transcribe_command(args: argparse.Namespace) -> int:
                 logger.error("Input directory not found: %s", input_dir)
             else:
                 # Find files
-                extensions = [ext.strip() for ext in cast(Any, args).extensions.split(",")]
+                extensions = [
+                    ext.strip() for ext in cast(Any, args).extensions.split(",")
+                ]
                 files: List[Union[str, Path]] = []
                 for ext in extensions:
                     files.extend(input_dir.glob(f"**/*.{ext}"))
@@ -456,7 +458,9 @@ def handle_transcribe_command(args: argparse.Namespace) -> int:
                     )
                 else:
                     output_dir = (
-                        Path(cast(Any, args).output) if cast(Any, args).output else input_dir
+                        Path(cast(Any, args).output)
+                        if cast(Any, args).output
+                        else input_dir
                     )
 
                     results = transcriber.batch_transcribe(
@@ -466,8 +470,12 @@ def handle_transcribe_command(args: argparse.Namespace) -> int:
                     )
 
                     # Summary
-                    successful = sum(1 for r in results.values() if r["status"] == "success")
-                    print(f"\nTranscription completed: {successful}/{len(files)} successful")
+                    successful = sum(
+                        1 for r in results.values() if r["status"] == "success"
+                    )
+                    print(
+                        f"\nTranscription completed: {successful}/{len(files)} successful"
+                    )
 
                     result_code = 0 if successful > 0 else 1
         else:
@@ -602,7 +610,9 @@ def handle_translate_command(args: argparse.Namespace) -> int:
             output_path = Path(cast(Any, args).output)
 
             # Parse subtitles
-            subtitles = subtitle_processor.parse_file(input_path, cast(Any, args).encoding)
+            subtitles = subtitle_processor.parse_file(
+                input_path, cast(Any, args).encoding
+            )
 
             # Extract and translate text
             text_lines = subtitle_processor.extract_text(subtitles)
@@ -723,7 +733,9 @@ def handle_encode_command(args: argparse.Namespace) -> int:
                     )
                     return result_code
 
-                result_code = _process_encoding_batch(files, output_dir, target_encodings)
+                result_code = _process_encoding_batch(
+                    files, output_dir, target_encodings
+                )
             else:
                 # Single file processing
                 input_path = Path(cast(Any, args).input)

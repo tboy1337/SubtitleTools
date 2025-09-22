@@ -343,7 +343,10 @@ class SubWhisperTranscriber:
         if output_path is None:
             # Create output in temp directory to avoid overwriting test files
             # Only use same directory if explicitly in a safe location
-            if "test" in str(video_path_obj.parent).lower() or "temp" in str(video_path_obj.parent).lower():
+            if (
+                "test" in str(video_path_obj.parent).lower()
+                or "temp" in str(video_path_obj.parent).lower()
+            ):
                 temp_dir = Path(tempfile.gettempdir()) / "subtitletools_transcription"
                 temp_dir.mkdir(exist_ok=True)
                 output_path = temp_dir / f"{video_path_obj.stem}.srt"
