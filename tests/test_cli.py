@@ -114,10 +114,14 @@ class TestTranscribeCommand:
         result = handle_transcribe_command(args)
         assert result == 1
 
+    @patch("subtitletools.cli.validate_file_exists")
     @patch("subtitletools.cli.SubWhisperTranscriber")
     @patch("subtitletools.utils.common.is_video_file")
     def test_handle_transcribe_command_single_video_success(
-        self, mock_is_video: Mock, mock_transcriber_class: Mock
+        self,
+        mock_is_video: Mock,
+        mock_transcriber_class: Mock,
+        mock_validate: Mock,
     ) -> None:
         """Test successful single video transcription."""
         args = argparse.Namespace(
@@ -142,10 +146,14 @@ class TestTranscribeCommand:
             Path("video.mp4"), Path("output.srt"), 50
         )
 
+    @patch("subtitletools.cli.validate_file_exists")
     @patch("subtitletools.cli.SubWhisperTranscriber")
     @patch("subtitletools.utils.common.is_audio_file")
     def test_handle_transcribe_command_single_audio_success(
-        self, mock_is_audio: Mock, mock_transcriber_class: Mock
+        self,
+        mock_is_audio: Mock,
+        mock_transcriber_class: Mock,
+        mock_validate: Mock,
     ) -> None:
         """Test successful single audio transcription."""
         args = argparse.Namespace(
@@ -890,7 +898,11 @@ class TestMainFunction:
         with patch("subtitletools.cli.create_parser") as mock_create_parser:
             mock_parser = Mock()
             mock_parser.parse_args.return_value = argparse.Namespace(
-                command="workflow", verbose=False, log_file=None
+                command="workflow",
+                verbose=False,
+                log_file=None,
+                input="input.mp4",
+                strict=False,
             )
             mock_create_parser.return_value = mock_parser
 
@@ -1190,6 +1202,49 @@ class TestAdditionalCliCoverage:
 
         assert result == 0
 
+    @patch("subtitletools.cli.SubtitleWorkflow")
+    @patch("os.path.isdir", return_value=True)
+    def test_handle_workflow_batch_skips_single_file_path(
+        self, mock_isdir: Mock, mock_workflow_class: Mock
+    ) -> None:
+        """Batch workflow must not fall through to single-file processing."""
+        args = argparse.Namespace(
+            input="input_dir/",
+            output="output_dir/",
+            model="base",
+            language=None,
+            src_lang="auto",
+            target_lang="en",
+            service="google",
+            api_key=None,
+            both=True,
+            max_segment_length=None,
+            fix_common_errors=False,
+            remove_hi=False,
+            auto_split_long_lines=False,
+            fix_punctuation=False,
+            ocr_fix=False,
+            convert_to=None,
+            batch=True,
+            extensions="mp4",
+            resume=True,
+        )
+
+        mock_workflow = Mock()
+        mock_workflow.batch_process.return_value = {
+            "input_dir/video.mp4": {"status": "completed"},
+        }
+        mock_workflow_class.return_value = mock_workflow
+
+        with patch("pathlib.Path.glob", return_value=[Path("input_dir/video.mp4")]):
+            with patch("subtitletools.utils.common.is_video_file", return_value=False):
+                result = handle_workflow_command(args)
+
+        assert result == 0
+        mock_workflow.batch_process.assert_called_once()
+        mock_workflow.transcribe_and_translate.assert_not_called()
+        mock_workflow.translate_existing_subtitles.assert_not_called()
+
     @patch("subtitletools.cli.SubWhisperTranscriber")
     @patch("os.path.isdir")
     def test_transcribe_batch_input_dir_not_found(
@@ -1414,3 +1469,47 @@ class TestAdditionalCliCoverage:
         if TYPE_CHECKING:
             pass  # This line should be covered
         assert True
+
+
+class TestEnvDefaults:
+    """Test environment variable CLI fallbacks."""
+
+    def test_apply_env_defaults_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test API key is read from environment."""
+        monkeypatch.setenv("SUBTITLETOOLS_GOOGLE_API_KEY", "env-secret")
+        args = argparse.Namespace(api_key=None, log_file=None, model="small")
+        from subtitletools.cli import _apply_env_defaults
+
+        _apply_env_defaults(args)
+        assert args.api_key == "env-secret"
+
+    def test_apply_env_defaults_log_file(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test log file path is read from environment."""
+        monkeypatch.setenv("SUBTITLETOOLS_LOG_FILE", "C:\\logs\\subtitletools.log")
+        args = argparse.Namespace(api_key=None, log_file=None, model="small")
+        from subtitletools.cli import _apply_env_defaults
+
+        _apply_env_defaults(args)
+        assert args.log_file == "C:\\logs\\subtitletools.log"
+
+    def test_apply_env_defaults_whisper_model(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test whisper model is read from environment when CLI uses default."""
+        monkeypatch.setenv("SUBTITLETOOLS_WHISPER_MODEL", "medium")
+        args = argparse.Namespace(api_key=None, log_file=None, model="small")
+        from subtitletools.cli import _apply_env_defaults
+
+        _apply_env_defaults(args)
+        assert args.model == "medium"
+
+
+@pytest.mark.env_validation
+class TestCliEnvironmentValidation:
+    """Test CLI environment validation without autouse bypass."""
+
+    @patch("subtitletools.utils.audio.find_ffmpeg", return_value=None)
+    def test_main_transcribe_fails_without_ffmpeg(self, _mock_ffmpeg: Mock) -> None:
+        """Test transcribe command fails when FFmpeg is required but missing."""
+        result = main(["transcribe", "test.mp4"])
+        assert result == 1

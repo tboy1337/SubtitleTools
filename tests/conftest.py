@@ -11,6 +11,40 @@ import pytest
 import srt
 
 
+@pytest.fixture(autouse=True)
+def _bypass_cli_environment_validation(
+    request: pytest.FixtureRequest,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Skip external dependency checks during unit tests."""
+    if request.node.get_closest_marker("env_validation"):
+        return
+    if request.node.get_closest_marker("integration"):
+        return
+    monkeypatch.setattr(
+        "subtitletools.cli.validate_environment",
+        lambda **_kwargs: [],
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Register custom markers used by this test suite."""
+    config.addinivalue_line("markers", "unit: unit tests")
+    config.addinivalue_line("markers", "integration: integration tests")
+    config.addinivalue_line(
+        "markers", "env_validation: CLI environment validation tests"
+    )
+
+
+def pytest_collection_modifyitems(
+    items: list[pytest.Item],
+) -> None:
+    """Mark all collected tests as unit tests unless already marked."""
+    for item in items:
+        if not item.get_closest_marker("integration"):
+            item.add_marker(pytest.mark.unit)
+
+
 @pytest.fixture
 def temp_dir() -> Generator[Path, None, None]:
     """Create a temporary directory for tests."""
@@ -31,7 +65,9 @@ def test_data_dir() -> Generator[Path, None, None]:
     permanent_files = {
         "test_video.mp4",
         "test_video_transcript.txt",
-        # Add any other permanent test files here
+        "complex_known.srt",
+        "complex_known_translations.json",
+        "complex_known_google_es.srt",
     }
 
     for file in test_data_path.glob("*"):

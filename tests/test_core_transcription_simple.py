@@ -21,7 +21,7 @@ class TestSubWhisperTranscriberBasic:
             transcriber = SubWhisperTranscriber(model_name="small")
             assert transcriber.model_name == "small"
             assert transcriber.language is None
-            assert transcriber.device is None
+            assert transcriber.device == "cpu"
 
     def test_init_with_invalid_model(self) -> None:
         """Test initialization with invalid model name."""
@@ -52,7 +52,7 @@ class TestSubWhisperTranscriberBasic:
             model = transcriber.model
 
             # Now it should be loaded
-            mock_load.assert_called_once_with("small", device=None)
+            mock_load.assert_called_once_with("small", device="cpu")
             assert model == mock_model
 
     def test_model_loading_error(self) -> None:
@@ -102,7 +102,8 @@ class TestSubWhisperTranscriberBasic:
         try:
             with patch("whisper.load_model") as mock_load:
                 with patch(
-                    "subtitletools.utils.audio.validate_audio_file", return_value=True
+                    "subtitletools.core.transcription.validate_audio_file",
+                    return_value=True,
                 ):
                     with patch(
                         "scipy.io.wavfile.read", side_effect=Exception("Read error")
@@ -130,7 +131,8 @@ class TestSubWhisperTranscriberBasic:
         try:
             with patch("whisper.load_model"):
                 with patch(
-                    "subtitletools.utils.audio.validate_audio_file", return_value=True
+                    "subtitletools.core.transcription.validate_audio_file",
+                    return_value=True,
                 ):
                     with patch(
                         "subtitletools.core.transcription.SubWhisperTranscriber._perform_transcription"
@@ -343,3 +345,45 @@ class TestDataStructures:
 
         assert len(result_data["segments"]) == 1
         assert result_data["language"] == "en"
+
+
+class TestTranscriptionHappyPath:
+    """Test successful transcription paths with mocked Whisper."""
+
+    def test_transcribe_audio_success(self) -> None:
+        """Test successful audio transcription returns segments."""
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp.write(b"fake audio")
+            tmp_path = tmp.name
+
+        try:
+            with patch("whisper.load_model") as mock_load:
+                with patch(
+                    "subtitletools.core.transcription.validate_audio_file",
+                    return_value=True,
+                ):
+                    with patch(
+                        "scipy.io.wavfile.read",
+                        return_value=(16000, [0, 1, 0, -1]),
+                    ):
+                        with patch(
+                            "scipy.signal.resample",
+                            return_value=[0.0, 0.1, 0.0, -0.1],
+                        ):
+                            mock_model = MagicMock()
+                            mock_model.transcribe.return_value = {
+                                "segments": [
+                                    {"start": 0.0, "end": 1.0, "text": "Hello"}
+                                ],
+                                "language": "en",
+                            }
+                            mock_load.return_value = mock_model
+
+                            transcriber = SubWhisperTranscriber()
+                            result = transcriber.transcribe_audio(tmp_path)
+
+                            assert result["segments"]
+                            assert result["segments"][0]["text"] == "Hello"
+                            assert result["language"] == "en"
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)

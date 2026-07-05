@@ -46,11 +46,13 @@ def apply_subtitle_edit_postprocess(
         logger.info("Running post-processing with native Python implementation")
 
         # Apply subtitle fixes using our Python implementation
-        success = apply_subtitle_fixes(subtitle_path, operations)
-
-        if not success:
-            logger.error("Post-processing failed")
-            return False
+        if operations:
+            success = apply_subtitle_fixes(subtitle_path, operations)
+            if not success:
+                logger.error("Post-processing failed")
+                return False
+        else:
+            success = True
 
         # Convert format if requested and different from current
         if output_format and output_format.lower() not in ["subrip", "srt"]:

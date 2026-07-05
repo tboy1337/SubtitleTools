@@ -1,7 +1,8 @@
 """Tests for main __init__.py module."""
 
-from typing import Any
 from unittest.mock import patch
+
+import pytest
 
 
 class TestMainInit:
@@ -10,11 +11,13 @@ class TestMainInit:
     def test_version_info(self) -> None:
         """Test that version information is available."""
         import subtitletools
+        from subtitletools._version import get_version
 
         assert hasattr(subtitletools, "__version__")
         assert hasattr(subtitletools, "__author__")
         assert hasattr(subtitletools, "__email__")
-        assert subtitletools.__version__ == "1.0.0"
+        assert subtitletools.__version__ == get_version()
+        assert subtitletools.__version__ != "unknown"
         assert subtitletools.__author__ == "tboy1337"
 
     def test_successful_imports(self) -> None:
@@ -33,27 +36,21 @@ class TestMainInit:
         assert "SubtitleProcessor" in subtitletools.__all__
         assert "SubtitleWorkflow" in subtitletools.__all__
 
-    @patch("subtitletools.core.transcription.SubWhisperTranscriber")
-    def test_import_error_handling(self, mock_transcriber: Any) -> None:
-        """Test that ImportError is handled gracefully."""
-        # Make the import fail
-        mock_transcriber.side_effect = ImportError("Module not found")
-
-        # Reload the module to trigger the import error path
-        import importlib
-
+    def test_lazy_imports(self) -> None:
+        """Test lazy imports of main classes."""
         import subtitletools
 
-        importlib.reload(subtitletools)
+        assert subtitletools.SubWhisperTranscriber is not None
+        assert subtitletools.SubtitleTranslator is not None
+        assert subtitletools.SubtitleProcessor is not None
+        assert subtitletools.SubtitleWorkflow is not None
 
-        # Should still have basic attributes
-        assert hasattr(subtitletools, "__version__")
-        assert hasattr(subtitletools, "__author__")
+    def test_lazy_import_unknown_attribute(self) -> None:
+        """Test lazy import raises for unknown attributes."""
+        import subtitletools
 
-        # But not the imported classes
-        basic_all = ["__version__", "__author__", "__email__"]
-        for item in basic_all:
-            assert item in subtitletools.__all__
+        with pytest.raises(AttributeError):
+            _ = subtitletools.NotARealClass
 
 
 class TestCoreInit:
@@ -154,3 +151,17 @@ class TestConfigInit:
 
         for item_name in expected_items:
             assert item_name in config.__all__
+
+
+class TestMainEntry:
+    """Test __main__.py entry point."""
+
+    def test_main_entry_delegates_to_cli(self) -> None:
+        """Test main_entry delegates to cli.main."""
+        from subtitletools.__main__ import main_entry
+
+        with patch("subtitletools.__main__.main", return_value=0) as mock_main:
+            result = main_entry(["--version"])
+
+        assert result == 0
+        mock_main.assert_called_once_with(["--version"])

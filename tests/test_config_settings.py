@@ -205,14 +205,9 @@ class TestDirectoryEnsurance:
     """Test directory creation functionality."""
 
     @patch("pathlib.Path.mkdir")
-    def test_ensure_directories_called_on_import(self, mock_mkdir: Any) -> None:
-        """Test that _ensure_directories is called and creates directories."""
-        # Reset the module to trigger directory creation
-        import importlib
-
-        importlib.reload(settings)
-
-        # Should have created app_data, cache, temp, and logs directories
+    def test_init_app_dirs_creates_directories(self, mock_mkdir: Any) -> None:
+        """Test that init_app_dirs creates application directories."""
+        settings.init_app_dirs()
         assert mock_mkdir.call_count >= 4
 
 
@@ -221,3 +216,31 @@ def cleanup_config() -> Generator[None, None, None]:
     """Clean up configuration after each test."""
     yield
     settings.reset_config()
+
+
+class TestEnvironmentVariables:
+    """Test environment variable helpers."""
+
+    def test_get_env_google_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test reading Google API key from environment."""
+        monkeypatch.setenv(settings.ENV_GOOGLE_API_KEY, "test-key")
+        assert settings.get_env_google_api_key() == "test-key"
+
+    def test_get_env_google_api_key_missing(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test missing API key returns None."""
+        monkeypatch.delenv(settings.ENV_GOOGLE_API_KEY, raising=False)
+        assert settings.get_env_google_api_key() is None
+
+    def test_get_env_whisper_model_valid(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test reading valid whisper model from environment."""
+        monkeypatch.setenv(settings.ENV_WHISPER_MODEL, "medium")
+        assert settings.get_env_whisper_model() == "medium"
+
+    def test_get_env_whisper_model_invalid(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test invalid whisper model returns None."""
+        monkeypatch.setenv(settings.ENV_WHISPER_MODEL, "not-a-model")
+        assert settings.get_env_whisper_model() is None

@@ -1,23 +1,2 @@
-# Main Requirements
--r requirements.txt
-
-# Core Testing Packages
-pytest
-pytest-asyncio
-pytest-timeout
-pytest-xdist
-pytest-mock
-pytest-cov
-pytest-html
-pytest-json-report
-pytest-benchmark
-pytest-rerunfailures
-
-# Linting and code quality
-pylint
-mypy
-black
-isort
-
-# Development dependencies
-twine
+# Development dependencies (canonical list is pyproject.toml [project.optional-dependencies].dev)
+-e .[dev]

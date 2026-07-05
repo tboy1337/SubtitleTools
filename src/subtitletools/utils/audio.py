@@ -19,9 +19,18 @@ from typing import Any, Dict, Optional, Union, cast
 
 # Global temporary directory for audio extraction
 _TEMP_DIR: Optional[str] = None
+_TEMP_DIRS: set[str] = set()
 _TEMP_DIR_LOCK = threading.Lock()
 
 logger = logging.getLogger(__name__)
+
+
+def _discover_winget_ffmpeg_paths() -> list[str]:
+    """Discover ffmpeg.exe under WinGet package installs."""
+    winget_root = Path(os.path.expanduser(r"~\AppData\Local\Microsoft\WinGet\Packages"))
+    if not winget_root.is_dir():
+        return []
+    return [str(path) for path in winget_root.rglob("ffmpeg.exe") if path.is_file()]
 
 
 def find_ffmpeg() -> Optional[str]:
@@ -37,24 +46,12 @@ def find_ffmpeg() -> Optional[str]:
 
     # Common locations for FFmpeg
     ffmpeg_locations = [
-        # Windows Program Files and common installation locations
         r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
         r"C:\ffmpeg\bin\ffmpeg.exe",
         r"C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe",
-        # Winget installation location - both versioned and essentials
-        os.path.expanduser(
-            r"~\AppData\Local\Microsoft\WinGet\Packages"
-            + r"\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe"
-            + r"\ffmpeg-7.1.1-full_build\bin\ffmpeg.exe"
-        ),
-        os.path.expanduser(
-            r"~\AppData\Local\Microsoft\WinGet\Packages"
-            + r"\Gyan.FFmpeg.Essentials_Microsoft.Winget.Source_8wekyb3d8bbwe"
-            + r"\ffmpeg-8.0-essentials_build\bin\ffmpeg.exe"
-        ),
-        # Default command (if in PATH)
         "ffmpeg",
     ]
+    ffmpeg_locations.extend(_discover_winget_ffmpeg_paths())
 
     # Check if ffmpeg is in PATH first
     try:
@@ -154,11 +151,13 @@ def extract_audio(
         with _TEMP_DIR_LOCK:
             if temp_dir:
                 working_temp_dir = temp_dir
+                _TEMP_DIRS.add(temp_dir)
             else:
                 if _TEMP_DIR is None:
                     _TEMP_DIR = tempfile.mkdtemp(prefix="subtitletools_audio_")
                     logger.info("Created temporary directory: %s", _TEMP_DIR)
                 working_temp_dir = _TEMP_DIR
+                _TEMP_DIRS.add(_TEMP_DIR)
 
         # Create a safe filename based on the input video name
         basename_no_ext = video_path_obj.stem
@@ -250,23 +249,50 @@ def extract_audio(
         raise RuntimeError(f"Audio extraction failed: {e}") from e
 
 
-def cleanup_temp_dir() -> None:
-    """Clean up the temporary directory used for audio extraction."""
+def cleanup_temp_dir(temp_dir: Optional[str] = None) -> None:
+    """Clean up temporary directory used for audio extraction.
+
+    Args:
+        temp_dir: Specific directory to remove. If None, removes the global
+            mkdtemp directory when set.
+    """
     global _TEMP_DIR  # pylint: disable=global-statement
 
-    if _TEMP_DIR and os.path.exists(_TEMP_DIR):
-        logger.info("Cleaning up temporary directory: %s", _TEMP_DIR)
-        try:
-            with _TEMP_DIR_LOCK:
-                shutil.rmtree(_TEMP_DIR)
-            logger.info("Temporary directory cleaned up successfully")
+    targets: list[str] = []
+    with _TEMP_DIR_LOCK:
+        if temp_dir:
+            targets = [temp_dir]
+            _TEMP_DIRS.discard(temp_dir)
+            if _TEMP_DIR == temp_dir:
+                _TEMP_DIR = None
+        elif _TEMP_DIR:
+            targets = [_TEMP_DIR]
+            _TEMP_DIRS.discard(_TEMP_DIR)
             _TEMP_DIR = None
-        except (OSError, IOError) as e:
-            logger.error("Failed to clean up temporary directory %s: %s", _TEMP_DIR, e)
-        except Exception as e:
-            logger.error(
-                "Unexpected error cleaning up temporary directory %s: %s", _TEMP_DIR, e
-            )
+
+    for target in targets:
+        if os.path.exists(target):
+            logger.info("Cleaning up temporary directory: %s", target)
+            try:
+                shutil.rmtree(target)
+                logger.info("Temporary directory cleaned up successfully")
+            except (OSError, IOError) as e:
+                logger.error("Failed to clean up temporary directory %s: %s", target, e)
+            except Exception as e:
+                logger.error(
+                    "Unexpected error cleaning up temporary directory %s: %s",
+                    target,
+                    e,
+                )
+
+
+def cleanup_all_temp_dirs() -> None:
+    """Remove all registered audio extraction temporary directories."""
+    with _TEMP_DIR_LOCK:
+        dirs = list(_TEMP_DIRS)
+
+    for directory in dirs:
+        cleanup_temp_dir(directory)
 
 
 def get_audio_duration(audio_path: Union[str, Path]) -> Optional[float]:
@@ -369,36 +395,49 @@ def find_ffprobe() -> Optional[str]:
     return None
 
 
-def validate_audio_file(audio_path: Union[str, Path]) -> bool:
+def validate_audio_file(
+    audio_path: Union[str, Path],
+    *,
+    strict: bool = False,
+) -> bool:
     """Validate that an audio file is readable and has content.
 
     Args:
         audio_path: Path to the audio file
+        strict: When True, require FFprobe duration validation
 
     Returns:
         True if file appears to be valid audio file
     """
+    is_valid = False
     try:
         audio_path_obj = Path(audio_path)
-
-        # Check file exists and has reasonable size
         if not audio_path_obj.exists():
             return False
 
-        file_size = audio_path_obj.stat().st_size
-        if file_size < 100:  # Less than 100 bytes is suspicious
+        if audio_path_obj.stat().st_size < 100:
             return False
 
-        # Try to get duration using FFprobe
         duration = get_audio_duration(audio_path)
-        if duration is None or duration <= 0:
-            return False
-
-        return True
+        if duration is None:
+            if strict:
+                logger.warning(
+                    "Could not determine audio duration for %s (FFprobe unavailable)",
+                    audio_path_obj,
+                )
+            else:
+                logger.warning(
+                    "Could not determine audio duration for %s; proceeding without "
+                    "FFprobe validation",
+                    audio_path_obj,
+                )
+                is_valid = True
+        else:
+            is_valid = duration > 0
 
     except (subprocess.SubprocessError, OSError) as e:
         logger.debug("Audio file validation failed for %s: %s", audio_path, e)
-        return False
     except Exception as e:
         logger.debug("Unexpected error validating audio file %s: %s", audio_path, e)
-        return False
+
+    return is_valid

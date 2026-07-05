@@ -220,13 +220,8 @@ class TestSubtitleProcessor:
         )
 
         assert len(result) == len(original_subtitles)
-        # The content should contain the translated text (might be split differently)
-        content_text = " ".join(sub.content for sub in result)
-        assert "Hola mundo" in content_text
-        # Allow for possible word splitting in the reconstruction algorithm
-        assert (
-            "btítulo de prueba" in content_text or "Subtítulo de prueba" in content_text
-        )
+        assert result[0].content == "Hola mundo"
+        assert result[1].content == "Subtítulo de prueba"
 
     def test_reconstruct_subtitles_more_lines(self) -> None:
         """Test reconstructing subtitles with more lines than originals."""
@@ -644,8 +639,8 @@ class TestSubtitleProcessorEdgeCases:
         assert result[0].index == 1
         assert result[0].start == timedelta(seconds=1)
         assert result[0].end == timedelta(seconds=3)
-        # Should include both translated and original
-        assert "Hello world" in result[0].content or "Hola" in result[0].content
+        assert result[0].content == "Hola mundo\nHello world"
+        assert result[1].content == "Como estas\nHow are you"
 
     def test_reconstruct_subtitles_no_space_translated_only(self) -> None:
         """Test reconstruct_subtitles without spaces and translated only."""
@@ -672,7 +667,7 @@ class TestSubtitleProcessorEdgeCases:
         result = self.processor.reconstruct_subtitles(
             original_subs, translated_sentences
         )
-        assert result == original_subs  # Should return original when total length is 0
+        assert result[0].content == "translated"
 
     def test_merge_subtitles_different_lengths(self) -> None:
         """Test merge_subtitles with different length lists."""
@@ -865,6 +860,8 @@ class TestSubtitleProcessorEdgeCases:
 
         assert isinstance(result, list)
         assert len(result) == len(original_subtitles)
+        assert result[0].content == "Hola mundo\nHello world"
+        assert result[1].content == "Esta es una prueba\nThis is a test"
 
     def test_reconstruct_subtitles_no_space(self) -> None:
         """Test subtitle reconstruction without space separation."""
@@ -1212,8 +1209,8 @@ class TestSubtitleProcessorMissingCoverage:
         result = self.processor.reconstruct_subtitles(
             original_subtitles, translated_sentences
         )
-        # Should return original when total length is 0 (both subtitles have empty content)
-        assert result == original_subtitles
+        assert result[0].content == "Hola"
+        assert result[1].content == "mundo"
 
     def test_merge_subtitles_second_longer(self) -> None:
         """Test merge_subtitles when second list is longer."""

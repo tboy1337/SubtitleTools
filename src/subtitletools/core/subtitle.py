@@ -216,6 +216,101 @@ class SubtitleProcessor:
         logger.debug("Sentence splitting produced %d sentences", len(sentences))
         return sentences
 
+    @staticmethod
+    def _format_reconstructed_content(
+        original_content: str,
+        translated_segment: str,
+        *,
+        both: bool,
+    ) -> str:
+        """Combine original and translated text for a single subtitle cue."""
+        if both:
+            if original_content.strip() and translated_segment:
+                return f"{translated_segment}\n{original_content}"
+            return translated_segment or original_content
+        return translated_segment or original_content
+
+    def _reconstruct_one_to_one(
+        self,
+        original_subtitles: SubtitleList,
+        translated_sentences: List[str],
+        *,
+        both: bool,
+    ) -> SubtitleList:
+        """Map translated lines to subtitle cues one-to-one."""
+        reconstructed: List[SubtitleLike] = []
+        for sub, translated in zip(original_subtitles, translated_sentences):
+            translated_segment = translated.strip()
+            new_content = self._format_reconstructed_content(
+                sub.content,
+                translated_segment,
+                both=both,
+            )
+            reconstructed.append(
+                cast(
+                    SubtitleLike,
+                    srt.Subtitle(
+                        index=sub.index,
+                        start=sub.start,
+                        end=sub.end,
+                        content=new_content,
+                        proprietary=getattr(sub, "proprietary", ""),
+                    ),
+                )
+            )
+        return reconstructed
+
+    def _reconstruct_proportional(
+        self,
+        original_subtitles: SubtitleList,
+        translated_sentences: List[str],
+        *,
+        space: bool,
+        both: bool,
+    ) -> SubtitleList:
+        """Distribute translated text proportionally when cue counts differ."""
+        translated_text = (
+            " ".join(translated_sentences) if space else "".join(translated_sentences)
+        )
+        reconstructed: List[SubtitleLike] = []
+        total_original_length = sum(len(sub.content) for sub in original_subtitles)
+
+        if total_original_length == 0:
+            return list(original_subtitles)
+
+        current_pos = 0
+        for i, sub in enumerate(original_subtitles):
+            original_length = len(sub.content)
+            proportion = original_length / total_original_length
+            translated_length = int(len(translated_text) * proportion)
+
+            if i == len(original_subtitles) - 1:
+                translated_segment = translated_text[current_pos:].strip()
+            else:
+                translated_segment = translated_text[
+                    current_pos : current_pos + translated_length
+                ].strip()
+                current_pos += translated_length
+
+            new_content = self._format_reconstructed_content(
+                sub.content,
+                translated_segment,
+                both=both,
+            )
+            reconstructed.append(
+                cast(
+                    SubtitleLike,
+                    srt.Subtitle(
+                        index=sub.index,
+                        start=sub.start,
+                        end=sub.end,
+                        content=new_content,
+                        proprietary=getattr(sub, "proprietary", ""),
+                    ),
+                )
+            )
+        return reconstructed
+
     def reconstruct_subtitles(
         self,
         original_subtitles: SubtitleList,
@@ -241,64 +336,25 @@ class SubtitleProcessor:
             logger.warning("No translated sentences provided")
             return original_subtitles
 
-        # Join translated sentences
-        translated_text = (
-            " ".join(translated_sentences) if space else "".join(translated_sentences)
-        )
-
-        # Split translated text back into subtitle segments
-        reconstructed: List[SubtitleLike] = []
-
-        # Simple approach: distribute translated text proportionally
-        total_original_length = sum(len(sub.content) for sub in original_subtitles)
-
-        if total_original_length == 0:
-            # Handle edge case of empty content
-            return original_subtitles
-
-        current_pos = 0
-
-        for i, sub in enumerate(original_subtitles):
-            original_length = len(sub.content)
-
-            # Calculate proportion of translated text for this subtitle
-            proportion = original_length / total_original_length
-            translated_length = int(len(translated_text) * proportion)
-
-            # Extract corresponding translated segment
-            if i == len(original_subtitles) - 1:
-                # Last subtitle gets remaining text
-                translated_segment = translated_text[current_pos:].strip()
-            else:
-                translated_segment = translated_text[
-                    current_pos : current_pos + translated_length
-                ].strip()
-                current_pos += translated_length
-
-            # Create new subtitle content
-            if both:
-                # Include both original and translated text
-                if sub.content.strip() and translated_segment:
-                    new_content = f"{translated_segment}\n{sub.content}"
-                else:
-                    new_content = translated_segment or sub.content
-            else:
-                # Only translated text
-                new_content = translated_segment or sub.content
-
-            # Create new subtitle object
-            new_subtitle = cast(
-                SubtitleLike,
-                srt.Subtitle(
-                    index=sub.index,
-                    start=sub.start,
-                    end=sub.end,
-                    content=new_content,
-                    proprietary=getattr(sub, "proprietary", ""),
-                ),
+        if len(translated_sentences) == len(original_subtitles):
+            reconstructed = self._reconstruct_one_to_one(
+                original_subtitles,
+                translated_sentences,
+                both=both,
             )
-
-            reconstructed.append(new_subtitle)
+        else:
+            logger.warning(
+                "Translated line count (%d) differs from subtitle cue count (%d); "
+                "using proportional fallback",
+                len(translated_sentences),
+                len(original_subtitles),
+            )
+            reconstructed = self._reconstruct_proportional(
+                original_subtitles,
+                translated_sentences,
+                space=space,
+                both=both,
+            )
 
         logger.info("Reconstructed %d subtitles", len(reconstructed))
         return reconstructed

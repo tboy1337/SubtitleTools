@@ -1,8 +1,11 @@
 """Configuration settings for SubtitleTools."""
 
+import logging
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Union
+
+logger = logging.getLogger(__name__)
 
 # Default configuration values
 DEFAULT_WHISPER_MODEL = "small"
@@ -131,6 +134,39 @@ SPACE_LANGUAGES = [
 NON_SPACE_LANGUAGES = ["zh", "zh-cn", "zh-tw", "ja", "ko", "th"]
 
 
+# Environment variable names (optional CLI fallbacks)
+ENV_GOOGLE_API_KEY = "SUBTITLETOOLS_GOOGLE_API_KEY"
+ENV_LOG_FILE = "SUBTITLETOOLS_LOG_FILE"
+ENV_WHISPER_MODEL = "SUBTITLETOOLS_WHISPER_MODEL"
+
+
+def get_env_google_api_key() -> Optional[str]:
+    """Return Google API key from environment when set."""
+    value = os.environ.get(ENV_GOOGLE_API_KEY, "").strip()
+    return value or None
+
+
+def get_env_log_file() -> Optional[str]:
+    """Return log file path from environment when set."""
+    value = os.environ.get(ENV_LOG_FILE, "").strip()
+    return value or None
+
+
+def get_env_whisper_model() -> Optional[str]:
+    """Return Whisper model name from environment when set."""
+    value = os.environ.get(ENV_WHISPER_MODEL, "").strip()
+    if value in WHISPER_MODELS:
+        return value
+    if value:
+        logger.warning(
+            "Ignoring %s=%r; not in supported models %s",
+            ENV_WHISPER_MODEL,
+            value,
+            WHISPER_MODELS,
+        )
+    return None
+
+
 # Application directories
 def get_app_data_dir() -> Path:
     """Get the application data directory."""
@@ -199,13 +235,9 @@ def reset_config() -> None:
     _config.clear()
 
 
-# Initialize directories on import
-def _ensure_directories() -> None:
+# Initialize directories on first use (not at import time)
+def init_app_dirs() -> None:
     """Ensure application directories exist."""
     for dir_func in [get_app_data_dir, get_cache_dir, get_temp_dir, get_logs_dir]:
         directory = dir_func()
         directory.mkdir(parents=True, exist_ok=True)
-
-
-# Auto-initialize directories
-_ensure_directories()

@@ -1,0 +1,115 @@
+1
+00:00:01,000 --> 00:00:04,500
+Hello, and welcome to the demonstration.
+
+2
+00:00:05,000 --> 00:00:08,250
+This subtitle file is intentionally complex.
+
+3
+00:00:09,000 --> 00:00:12,000
+Line one of a multi-line cue.
+Line two continues the thought.
+Line three finishes it.
+
+4
+00:00:13,500 --> 00:00:15,000
+Hi.
+
+5
+00:00:16,000 --> 00:00:22,000
+At 3:45 PM on 12/31/2025, agent 007 entered room 404.
+
+6
+00:00:23,000 --> 00:00:27,500
+He said, "We need exactly 100% accuracy!"
+
+7
+00:00:28,000 --> 00:00:31,000
+It's a test of apostrophes and "nested quotes".
+
+8
+00:00:32,000 --> 00:00:35,500
+Em dash test — hyphen-minus - and ellipsis...
+
+9
+00:00:36,000 --> 00:00:39,000
+ALL CAPS SHOULD REMAIN STABLE IN SOURCE.
+
+10
+00:00:40,000 --> 00:00:43,500
+<i>Speaker A:</i> Are you ready?
+<i>Speaker B:</i> Always.
+
+11
+00:00:44,000 --> 00:00:47,000
+[Music playing softly]
+
+12
+00:00:48,000 --> 00:00:51,500
+- First bullet point
+- Second bullet point
+
+13
+00:00:52,000 --> 00:00:55,000
+URL reference: https://example.com/path?q=1
+
+14
+00:00:56,000 --> 00:00:59,500
+Email-style text: user@example.org
+
+15
+00:01:00,000 --> 00:01:03,000
+Tab-separated	words	and   multiple   spaces.
+
+16
+00:01:04,000 --> 00:01:07,500
+Unicode symbols: café, naïve, 日本語, emoji test.
+
+17
+00:01:08,000 --> 00:01:11,000
+¿Hablas español? ¡Por supuesto!
+
+18
+00:01:12,000 --> 00:01:16,000
+Mathematical tokens: x^2 + y^2 = z^2, and 3.14159.
+
+19
+00:01:17,000 --> 00:01:20,500
+Path-like text: C:\Users\Demo\file.srt
+
+20
+00:01:21,000 --> 00:01:24,000
+HTML entities: &amp; &lt;tag&gt;
+
+21
+00:01:25,000 --> 00:01:28,500
+Repeated word word word for alignment checks.
+
+22
+00:01:29,000 --> 00:01:32,000
+Question? Exclamation! Statement.
+
+23
+00:01:33,000 --> 00:01:37,000
+A much longer cue that spans a wider window so timing boundaries stay independent while the translation mapping remains one cue to one translated block without proportional splitting errors.
+
+24
+00:01:38,000 --> 00:01:41,500
+Short again.
+
+25
+00:01:42,000 --> 00:01:45,000
+Penultimate cue with comma, semicolon; colon: end.
+
+26
+00:01:46,000 --> 00:01:50,000
+Final cue — thanks for watching.
+
+27
+00:01:51,000 --> 00:01:54,000
+♪ Closing theme ♪
+
+28
+00:01:55,000 --> 00:01:58,500
+The end.

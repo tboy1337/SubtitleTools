@@ -12,6 +12,7 @@ import traceback
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
+from ._version import get_version
 from .config.settings import (
     DEFAULT_ENCODING,
     DEFAULT_SRC_LANGUAGE,
@@ -21,6 +22,9 @@ from .config.settings import (
     SUPPORTED_SUBTITLE_FORMATS,
     SUPPORTED_TRANSLATION_SERVICES,
     WHISPER_MODELS,
+    get_env_google_api_key,
+    get_env_log_file,
+    get_env_whisper_model,
 )
 from .core.subtitle import SubtitleError, SubtitleProcessor
 from .core.transcription import SubWhisperTranscriber, TranscriptionError
@@ -32,10 +36,13 @@ from .utils.common import (
     is_subtitle_file,
     is_video_file,
     setup_logging,
+    validate_environment,
+    validate_file_exists,
 )
 from .utils.encoding import (
     convert_to_multiple_encodings,
     get_recommended_encodings,
+    validate_encoding,
 )
 from .utils.postprocess import get_supported_output_formats
 
@@ -43,6 +50,54 @@ if TYPE_CHECKING:
     from argparse import _SubParsersAction
 
 logger = logging.getLogger(__name__)
+
+
+def _apply_env_defaults(parsed_args: argparse.Namespace) -> None:
+    """Apply environment variable fallbacks for CLI options."""
+    if not getattr(parsed_args, "log_file", None):
+        env_log = get_env_log_file()
+        if env_log:
+            parsed_args.log_file = env_log
+
+    api_key = getattr(parsed_args, "api_key", None)
+    if not api_key:
+        env_api_key = get_env_google_api_key()
+        if env_api_key:
+            parsed_args.api_key = env_api_key
+
+    env_model = get_env_whisper_model()
+    if env_model and hasattr(parsed_args, "model"):
+        if parsed_args.model == DEFAULT_WHISPER_MODEL:
+            parsed_args.model = env_model
+
+
+def _validate_max_segment_length(max_segment_length: Optional[int]) -> Optional[str]:
+    """Return an error message if max segment length is invalid."""
+    if max_segment_length is not None and max_segment_length <= 0:
+        return "--max-segment-length must be a positive integer"
+    return None
+
+
+def _command_needs_ffmpeg(command: Optional[str], args: argparse.Namespace) -> bool:
+    """Return True when the command may require FFmpeg."""
+    if command == "transcribe":
+        return True
+    if command == "workflow":
+        input_value = getattr(args, "input", "")
+        input_path = Path(input_value) if input_value else Path(".")
+        if getattr(args, "batch", False) or input_path.is_dir():
+            return True
+        return is_video_file(input_path)
+    return False
+
+
+def _get_translation_service(
+    args: argparse.Namespace,
+) -> tuple[Optional[str], Optional[str]]:
+    """Extract translation service and API key from parsed args when present."""
+    service = getattr(args, "service", None)
+    api_key = getattr(args, "api_key", None)
+    return service, api_key
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -71,7 +126,7 @@ For more information, visit: https://github.com/tboy1337/SubtitleTools
     parser.add_argument(
         "--version",
         action="version",
-        version="SubtitleTools 1.0.0",
+        version=f"SubtitleTools {get_version()}",
     )
 
     parser.add_argument(
@@ -84,6 +139,12 @@ For more information, visit: https://github.com/tboy1337/SubtitleTools
     parser.add_argument(
         "--log-file",
         help="Log file path (in addition to console output)",
+    )
+
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail if optional dependencies (e.g. FFprobe) are missing",
     )
 
     # Create subparsers for commands
@@ -437,6 +498,11 @@ def handle_transcribe_command(args: argparse.Namespace) -> int:
             cast(Any, args).model, cast(Any, args).language
         )
 
+        segment_error = _validate_max_segment_length(cast(Any, args).max_segment_length)
+        if segment_error:
+            logger.error(segment_error)
+            return result_code
+
         if cast(Any, args).batch or os.path.isdir(cast(Any, args).input):
             # Batch processing
             input_dir = Path(cast(Any, args).input)
@@ -481,6 +547,7 @@ def handle_transcribe_command(args: argparse.Namespace) -> int:
         else:
             # Single file processing
             input_path = Path(cast(Any, args).input)
+            validate_file_exists(input_path)
             output_path = (
                 Path(cast(Any, args).output)
                 if cast(Any, args).output
@@ -708,6 +775,10 @@ def handle_encode_command(args: argparse.Namespace) -> int:
                 target_encodings = [
                     enc.strip() for enc in cast(Any, args).to_encoding.split(",")
                 ]
+                for encoding in target_encodings:
+                    if not validate_encoding(encoding):
+                        logger.error("Unsupported encoding: %s", encoding)
+                        return result_code
             elif cast(Any, args).recommended:
                 target_encodings = get_recommended_encodings(cast(Any, args).language)
                 print(
@@ -777,6 +848,11 @@ def handle_workflow_command(args: argparse.Namespace) -> int:
     result_code = 1  # Default error code
 
     try:
+        segment_error = _validate_max_segment_length(cast(Any, args).max_segment_length)
+        if segment_error:
+            logger.error(segment_error)
+            return result_code
+
         # Check post-processing environment if needed
         postprocess_ops = []
         if cast(Any, args).fix_common_errors:
@@ -830,6 +906,7 @@ def handle_workflow_command(args: argparse.Namespace) -> int:
                     both=cast(Any, args).both,
                     resume=cast(Any, args).resume,
                     postprocess_operations=postprocess_ops,
+                    convert_to=cast(Any, args).convert_to,
                 )
 
                 # Summary
@@ -839,48 +916,52 @@ def handle_workflow_command(args: argparse.Namespace) -> int:
                 print(f"\nWorkflow completed: {successful}/{len(files)} successful")
                 result_code = 0 if successful > 0 else 1
 
-        # Single file processing
-        input_path = Path(cast(Any, args).input)
-        output_path = (
-            Path(cast(Any, args).output)
-            if cast(Any, args).output
-            else input_path.with_suffix(".srt")
-        )
-
-        def progress_callback(message: str, progress: float) -> None:
-            percent = int(progress * 100)
-            print(f"\r[{percent:3d}%] {message}", end="", flush=True)
-
-        if is_video_file(input_path) or is_audio_file(input_path):
-            # Full workflow
-            result = workflow.transcribe_and_translate(
-                input_path,
-                output_path,
-                src_lang=cast(Any, args).src_lang,
-                target_lang=cast(Any, args).target_lang,
-                max_segment_length=cast(Any, args).max_segment_length,
-                both=cast(Any, args).both,
-                resume=cast(Any, args).resume,
-                progress_callback=progress_callback,
-                postprocess_operations=postprocess_ops,
-            )
-            print(f"\nWorkflow completed: {result['output_path']}")
-            print(f"Total time: {result['total_time']:.2f} seconds")
-            result_code = 0
-        elif is_subtitle_file(input_path):
-            # Translation-only workflow
-            result = workflow.translate_existing_subtitles(
-                input_path,
-                output_path,
-                src_lang=cast(Any, args).src_lang,
-                target_lang=cast(Any, args).target_lang,
-                both=cast(Any, args).both,
-            )
-            print(f"\nWorkflow completed: {result['output_path']}")
-            print(f"Total time: {result['total_time']:.2f} seconds")
-            result_code = 0
         else:
-            logger.error("Unsupported file type: %s", input_path)
+            # Single file processing
+            input_path = Path(cast(Any, args).input)
+            output_path = (
+                Path(cast(Any, args).output)
+                if cast(Any, args).output
+                else input_path.with_suffix(".srt")
+            )
+
+            def progress_callback(message: str, progress: float) -> None:
+                percent = int(progress * 100)
+                print(f"\r[{percent:3d}%] {message}", end="", flush=True)
+
+            if is_video_file(input_path) or is_audio_file(input_path):
+                # Full workflow
+                result = workflow.transcribe_and_translate(
+                    input_path,
+                    output_path,
+                    src_lang=cast(Any, args).src_lang,
+                    target_lang=cast(Any, args).target_lang,
+                    max_segment_length=cast(Any, args).max_segment_length,
+                    both=cast(Any, args).both,
+                    resume=cast(Any, args).resume,
+                    progress_callback=progress_callback,
+                    postprocess_operations=postprocess_ops,
+                    convert_to=cast(Any, args).convert_to,
+                )
+                print(f"\nWorkflow completed: {result['output_path']}")
+                print(f"Total time: {result['total_time']:.2f} seconds")
+                result_code = 0
+            elif is_subtitle_file(input_path):
+                # Translation-only workflow
+                result = workflow.translate_existing_subtitles(
+                    input_path,
+                    output_path,
+                    src_lang=cast(Any, args).src_lang,
+                    target_lang=cast(Any, args).target_lang,
+                    both=cast(Any, args).both,
+                    postprocess_operations=postprocess_ops,
+                    convert_to=cast(Any, args).convert_to,
+                )
+                print(f"\nWorkflow completed: {result['output_path']}")
+                print(f"Total time: {result['total_time']:.2f} seconds")
+                result_code = 0
+            else:
+                logger.error("Unsupported file type: %s", input_path)
 
     except WorkflowError as e:
         logger.error("Workflow error: %s", e)
@@ -909,6 +990,7 @@ def main(args: Optional[List[str]] = None) -> int:
     try:
         parser = create_parser()
         parsed_args = parser.parse_args(args)
+        _apply_env_defaults(parsed_args)
 
         # Setup logging
         log_level = logging.DEBUG if parsed_args.verbose else logging.INFO
@@ -921,8 +1003,21 @@ def main(args: Optional[List[str]] = None) -> int:
 
         # Print banner
         if not parsed_args.verbose:
-            print("SubtitleTools v1.0.0 - Complete Subtitle Workflow Tool")
+            print(f"SubtitleTools v{get_version()} - Complete Subtitle Workflow Tool")
             print("=" * 50)
+
+        if parsed_args.command:
+            service, api_key = _get_translation_service(parsed_args)
+            env_errors = validate_environment(
+                require_ffmpeg=_command_needs_ffmpeg(parsed_args.command, parsed_args),
+                translation_service=service,
+                api_key=api_key,
+                strict=getattr(parsed_args, "strict", False),
+            )
+            if env_errors:
+                for message in env_errors:
+                    logger.error(message)
+                return 1
 
         # Dispatch to command handlers
         if parsed_args.command == "transcribe":
