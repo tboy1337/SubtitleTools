@@ -7,8 +7,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.sha }}
@@ -18,10 +16,33 @@ permissions:
   contents: write
   id-token: write
 
-env:
-  PACKAGE_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
-
 jobs:
+  release-gate:
+    name: Detect version bump
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      version: ${{ steps.check.outputs.version }}
+      tag: ${{ steps.check.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+
+      - name: Compare pyproject.toml version with previous commit
+        id: check
+        run: |
+          CURRENT=$(python -c "import tomllib; from pathlib import Path; print(tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8'))['project']['version'])")
+          PREVIOUS=$(git show HEAD^:pyproject.toml 2>/dev/null | python -c "import sys, tomllib; print(tomllib.loads(sys.stdin.read())['project']['version'])" 2>/dev/null || true)
+          if [ -n "$CURRENT" ] && [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "tag=v$CURRENT" >> "$GITHUB_OUTPUT"
+
   quality:
     name: Quality checks (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
@@ -53,8 +74,8 @@ jobs:
           path: coverage.xml
 
   build-windows:
-    needs: quality
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [quality, release-gate]
+    if: needs.release-gate.result == 'success' && needs.release-gate.outputs.should_release == 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -69,16 +90,6 @@ jobs:
         shell: pwsh
         run: |
           python -c "import tomllib; from pathlib import Path; data = tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8')); print('version=' + data['project']['version'])" >> $env:GITHUB_OUTPUT
-
-      - name: Validate tag version
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: pwsh
-        run: |
-          $tagVersion = "${{ github.ref_name }}".TrimStart('v')
-          $pkgVersion = "${{ steps.version.outputs.version }}"
-          if ($tagVersion -ne $pkgVersion) {
-            Write-Error "Tag version $tagVersion does not match pyproject.toml version $pkgVersion"
-          }
 
       - name: Create virtual environment
         run: python -m venv venv
@@ -129,8 +140,8 @@ jobs:
 
   build-wheels:
     name: Build Python wheels
-    needs: quality
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [quality, release-gate]
+    if: needs.release-gate.result == 'success' && needs.release-gate.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -159,16 +170,11 @@ jobs:
           path: dist/
 
   create-release:
-    needs: [build-windows, build-wheels]
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-windows, build-wheels, release-gate]
+    if: needs.release-gate.result == 'success' && needs.release-gate.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-
-      - name: Read package version
-        id: version
-        run: |
-          python -c "import tomllib; from pathlib import Path; data = tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8')); print('version=' + data['project']['version'])" >> $GITHUB_OUTPUT
 
       - name: Download Windows build
         uses: actions/download-artifact@v8
@@ -179,16 +185,16 @@ jobs:
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: ./build/SubtitleTools-v${{ steps.version.outputs.version }}-windows.zip
-          tag: ${{ github.ref_name }}
+          artifacts: ./build/SubtitleTools-v${{ needs.release-gate.outputs.version }}-windows.zip
+          tag: ${{ needs.release-gate.outputs.tag }}
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
           removeArtifacts: true
 
   publish-pypi:
     name: Publish wheels to PyPI
-    needs: [build-wheels, quality]
-    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-wheels, quality, release-gate]
+    if: needs.release-gate.result == 'success' && needs.release-gate.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts

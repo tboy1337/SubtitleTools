@@ -47,13 +47,6 @@ If subtitle cues do not match translations, ensure you are on the latest version
 
 Whisper loads the full audio into memory. Use a smaller model (`--model tiny` or `base`) or shorter source files.
 
-## PyPI publish / version mismatch
+## PyPI publish / release did not run
 
-Releases are tag-based. Bump `version` in `pyproject.toml`, commit, then:
-
-```bash
-git tag v1.0.3
-git push origin v1.0.3
-```
-
-The tag must match `pyproject.toml` (without the `v` prefix).
+Releases run automatically when `version` in `pyproject.toml` changes on a push to `main`. If build or publish jobs were skipped, confirm the version field actually changed in that commit. Pushes that only change other files run quality checks only.
