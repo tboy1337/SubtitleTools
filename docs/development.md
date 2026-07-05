@@ -33,7 +33,7 @@ Minimum coverage threshold is **90%**, configured in `.coveragerc`.
 
 When the `version` in `pyproject.toml` changes on `main`, CI automatically builds wheels, the Windows executable, creates a GitHub Release tagged `v<version>`, and publishes to PyPI. Pull requests and pushes that do not change the version run quality checks only.
 
-The Windows executable is built with PyInstaller using [`SubtitleTools.spec`](../SubtitleTools.spec) (large download due to PyTorch/Whisper).
+The Windows executable is built with PyInstaller using [`SubtitleTools.spec`](../SubtitleTools.spec) and [`scripts/pyi_build.py`](../scripts/pyi_build.py). CI installs the CPU-only PyTorch wheel before packaging to avoid CUDA-related bundling noise.
 
 ## Project layout
 

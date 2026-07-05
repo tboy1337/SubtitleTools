@@ -99,6 +99,7 @@ jobs:
           .\venv\Scripts\Activate.ps1
           python -m pip install --upgrade pip setuptools wheel pyinstaller
           python -m pip install -e .
+          python -m pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cpu
         shell: pwsh
 
       - name: Generate version info file
@@ -110,7 +111,7 @@ jobs:
       - name: Build executable
         run: |
           .\venv\Scripts\Activate.ps1
-          pyinstaller SubtitleTools.spec
+          python scripts/pyi_build.py
         shell: pwsh
 
       - name: Rename executable

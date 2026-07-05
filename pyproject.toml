@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "subtitletools"
-version = "1.0.4"
+version = "1.0.6"
 description = "Complete subtitle workflow tool: transcribe, translate, and process subtitles"
 readme = "README.md"
 license = "LicenseRef-CRL-1.1"
