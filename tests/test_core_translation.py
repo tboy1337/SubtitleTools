@@ -380,6 +380,11 @@ class TestSubtitleTranslator:
         with pytest.raises(TranslationError, match="Unsupported translation service"):
             SubtitleTranslator("invalid_service")
 
+    def test_init_google_cloud_requires_api_key(self) -> None:
+        """Test google_cloud service requires an API key."""
+        with pytest.raises(TranslationError, match="requires an API key"):
+            SubtitleTranslator("google_cloud")
+
     def test_get_translator_google(self) -> None:
         """Test getting Google translator."""
         translator = SubtitleTranslator("google")
@@ -477,10 +482,10 @@ class TestSubtitleTranslator:
 
     def test_get_service_info(self) -> None:
         """Test getting service information."""
-        translator = SubtitleTranslator("google", "test_key")
+        translator = SubtitleTranslator("google_cloud", "test_key")
         info = translator.get_service_info()
 
-        assert info["service"] == "google"
+        assert info["service"] == "google_cloud"
         assert info["has_api_key"] is True
         assert info["max_text_length"] == 3500
 

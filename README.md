@@ -2,7 +2,15 @@
 
 A tool for subtitle processing workflows, including extraction, conversion and optimization.
 
-## 🚀 Features
+## Documentation
+
+- [Installation](docs/installation.md)
+- [Usage](docs/usage.md)
+- [Translation services](docs/translation.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Development](docs/development.md)
+
+## Features
 
 SubtitleTools provides a complete subtitle processing pipeline:
 
@@ -16,9 +24,8 @@ SubtitleTools provides a complete subtitle processing pipeline:
 
 ### 🌐 Translation
 - **Language Translation**: Translate subtitle files between 50+ languages
-- **Context-Aware Translation**: Smart translation modes for better accuracy
-- **Rate Limiting Protection**: Robust handling of API rate limits with resume capability
-- **Multiple Translation Services**: Support for Google Translate and Google Cloud Translation API
+- **Rate Limiting Protection**: Robust handling of API rate limits with retry backoff
+- **Translation Services**: `google` (web, requires Node.js) or `google_cloud` (API key)
 - **Batch Translation**: Translate multiple subtitle files at once
 
 ### 🔤 Encoding Conversion
@@ -47,6 +54,9 @@ SubtitleTools provides a complete subtitle processing pipeline:
 
 1. **Python 3.12+**
 2. **FFmpeg** (for video/audio processing)
+3. **Node.js** (for `google` web translation via `pyexecjs`; optional if using `google_cloud` with an API key)
+
+See [docs/installation.md](docs/installation.md) for details.
 
 ### Installing FFmpeg
 
@@ -103,7 +113,7 @@ pip install -e ".[dev]"
 
 ### Releases
 
-Pre-built Windows executables are published on [GitHub Releases](https://github.com/tboy1337/SubtitleTools/releases) alongside each tagged version. pip installs remain the recommended cross-platform option.
+Pre-built Windows executables are published on [GitHub Releases](https://github.com/tboy1337/SubtitleTools/releases) when a version tag (e.g. `v1.0.3`) is pushed. pip installs remain the recommended cross-platform option.
 
 #### Using the Tool
 
@@ -196,7 +206,7 @@ All post-processing is performed using native Python implementations for maximum
 ### Translation Options  
 - `--src-lang` - Source language code
 - `--target-lang` - Target language code
-- `--service` - Translation service (google, google_cloud)
+- `--service` - Translation service: `google` (web) or `google_cloud` (requires `--api-key`)
 - `--api-key` - Translation service API key
 - `--both` - Keep both original and translated text
 

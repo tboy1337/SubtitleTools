@@ -1,5 +1,7 @@
 """Tests for package version resolution."""
 
+import importlib.util
+import sys
 from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 
@@ -65,3 +67,27 @@ class TestVersion:
         _fallback_version.cache_clear()
         assert _pyproject_path() == bundled
         assert get_version() == "9.9.9"
+
+
+class TestGenerateFileVersionInfo:
+    """Tests for scripts/generate_file_version_info.py."""
+
+    def test_generate_file_version_info_writes_version(self, tmp_path: Path) -> None:
+        """Test version info script reads pyproject version."""
+        repo_root = Path(__file__).resolve().parent.parent
+        script_path = repo_root / "scripts" / "generate_file_version_info.py"
+        spec = importlib.util.spec_from_file_location(
+            "generate_file_version_info", script_path
+        )
+        assert spec and spec.loader
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["generate_file_version_info"] = module
+        spec.loader.exec_module(module)
+
+        version = module._read_project_version(repo_root / "pyproject.toml")
+        _fallback_version.cache_clear()
+        assert version == _fallback_version()
+
+        info = module._build_version_info(version)
+        assert version in info
+        assert "VSVersionInfo" in info

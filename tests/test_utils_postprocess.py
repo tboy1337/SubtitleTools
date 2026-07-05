@@ -2,6 +2,7 @@
 
 import tempfile
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from subtitletools.utils.postprocess import (
     apply_common_fixes,
@@ -58,6 +59,22 @@ class TestApplySubtitleEditPostprocess:
             )
 
             assert result is True
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+    @patch("subtitletools.utils.postprocess.native_convert_format", return_value=True)
+    def test_apply_subtitle_edit_postprocess_convert_only(
+        self, mock_convert: Mock
+    ) -> None:
+        """Test format conversion without fix operations."""
+        with tempfile.NamedTemporaryFile(suffix=".srt", delete=False) as tmp:
+            tmp.write(b"1\n00:00:01,000 --> 00:00:02,000\nTest subtitle\n")
+            tmp_path = tmp.name
+
+        try:
+            result = apply_subtitle_edit_postprocess(tmp_path, [], "vtt")
+            assert result is True
+            mock_convert.assert_called_once()
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 

@@ -10,6 +10,12 @@ readme = "README.md"
 license = "LicenseRef-CRL-1.1"
 license-files = ["LICENSE.md"]
 requires-python = ">=3.12"
+authors = [
+    {name = "tboy1337", email = "tboy1337@proton.me"},
+]
+maintainers = [
+    {name = "tboy1337", email = "tboy1337@proton.me"},
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -43,6 +49,7 @@ dev = [
     "pytest-timeout",
     "pytest-mock",
     "pytest-cov",
+    "pytest-xdist",
     "pylint",
     "mypy",
     "autopep8",
@@ -59,7 +66,7 @@ Documentation = "https://github.com/tboy1337/SubtitleTools/blob/main/README.md"
 Repository = "https://github.com/tboy1337/SubtitleTools.git"
 
 [project.scripts]
-subtitletools = "subtitletools.__main__:main"
+subtitletools = "subtitletools.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

@@ -15,7 +15,68 @@ from subtitletools.core.workflow import (
     CheckpointManager,
     SubtitleWorkflow,
     WorkflowError,
+    compute_workflow_id,
 )
+
+
+class TestComputeWorkflowId:
+    """Test stable workflow checkpoint identifiers."""
+
+    def test_compute_workflow_id_is_stable(self, tmp_path: Path) -> None:
+        """Test workflow ID is deterministic for the same inputs."""
+        input_path = tmp_path / "video.mp4"
+        output_path = tmp_path / "output.srt"
+        input_path.write_bytes(b"video")
+
+        first = compute_workflow_id(
+            input_path,
+            output_path,
+            whisper_model="small",
+            translation_service="google",
+            src_lang="en",
+            target_lang="es",
+            max_segment_length=80,
+            both=True,
+        )
+        second = compute_workflow_id(
+            input_path,
+            output_path,
+            whisper_model="small",
+            translation_service="google",
+            src_lang="en",
+            target_lang="es",
+            max_segment_length=80,
+            both=True,
+        )
+        assert first == second
+
+    def test_compute_workflow_id_changes_with_options(self, tmp_path: Path) -> None:
+        """Test workflow ID changes when options differ."""
+        input_path = tmp_path / "video.mp4"
+        output_path = tmp_path / "output.srt"
+        input_path.write_bytes(b"video")
+
+        base = compute_workflow_id(
+            input_path,
+            output_path,
+            whisper_model="small",
+            translation_service="google",
+            src_lang="en",
+            target_lang="es",
+            max_segment_length=80,
+            both=True,
+        )
+        different = compute_workflow_id(
+            input_path,
+            output_path,
+            whisper_model="medium",
+            translation_service="google",
+            src_lang="en",
+            target_lang="es",
+            max_segment_length=80,
+            both=True,
+        )
+        assert base != different
 
 
 class TestWorkflowError:

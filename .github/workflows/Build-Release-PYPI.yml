@@ -7,57 +7,116 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v*"
 permissions:
   contents: write
   id-token: write
 
+env:
+  PACKAGE_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  quality:
+    name: Quality checks (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v7
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.14'
-      - name: Create virtual environment
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package and dev dependencies
         run: |
-          python -m venv venv
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install -e ".[dev]"
+
+      - name: Run verification suite
+        run: python scripts/verify.py
+
+      - name: Upload coverage report
+        if: matrix.python-version == '3.14'
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  build-windows:
+    needs: quality
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Read package version
+        id: version
+        shell: pwsh
+        run: |
+          python -c "import tomllib; from pathlib import Path; data = tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8')); print('version=' + data['project']['version'])" >> $env:GITHUB_OUTPUT
+
+      - name: Validate tag version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tagVersion = "${{ github.ref_name }}".TrimStart('v')
+          $pkgVersion = "${{ steps.version.outputs.version }}"
+          if ($tagVersion -ne $pkgVersion) {
+            Write-Error "Tag version $tagVersion does not match pyproject.toml version $pkgVersion"
+          }
+
+      - name: Create virtual environment
+        run: python -m venv venv
+
       - name: Install dependencies in virtual environment
         run: |
           .\venv\Scripts\Activate.ps1
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools
-          python -m pip install --upgrade wheel
-          python -m pip install --upgrade pyinstaller
-          python -m pip install --upgrade -r requirements.txt
+          python -m pip install --upgrade pip setuptools wheel pyinstaller
+          python -m pip install -e .
         shell: pwsh
+
       - name: Generate version info file
         run: |
           .\venv\Scripts\Activate.ps1
           python scripts/generate_file_version_info.py
         shell: pwsh
+
       - name: Build executable
         run: |
           .\venv\Scripts\Activate.ps1
           pyinstaller SubtitleTools.spec
         shell: pwsh
+
       - name: Rename executable
-        run: |
-          Rename-Item -Path dist/SubtitleTools.exe -NewName SubtitleTools-v1.0.${{ github.run_number }}-windows.exe
         shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          Rename-Item -Path dist/SubtitleTools.exe -NewName "SubtitleTools-v$version-windows.exe"
+
       - name: Zip the exe
-        run: |
-          Compress-Archive -Path "dist/SubtitleTools-v1.0.${{ github.run_number }}-windows.exe" -DestinationPath "dist/SubtitleTools-v1.0.${{ github.run_number }}-windows.zip"
         shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          Compress-Archive -Path "dist/SubtitleTools-v$version-windows.exe" -DestinationPath "dist/SubtitleTools-v$version-windows.zip"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: windows-build
-          path: dist/SubtitleTools-v1.0.${{ github.run_number }}-windows.zip
+          path: dist/SubtitleTools-v${{ steps.version.outputs.version }}-windows.zip
 
   build-wheels:
     name: Build Python wheels
+    needs: quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -65,18 +124,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.14'
+          python-version: "3.14"
 
-      - name: Install dependencies
+      - name: Install build tools
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools
-          python -m pip install --upgrade wheel
-          python -m pip install --upgrade build
+          python -m pip install --upgrade pip setuptools wheel build
 
       - name: Build pure Python wheel and sdist
-        run: |
-          python -m build
+        run: python -m build
 
       - name: Store artifacts
         uses: actions/upload-artifact@v7
@@ -85,31 +140,37 @@ jobs:
           path: dist/
 
   create-release:
-    needs: [build-windows]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build-windows, build-wheels]
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
+      - name: Read package version
+        id: version
+        run: |
+          python -c "import tomllib; from pathlib import Path; data = tomllib.loads(Path('pyproject.toml').read_text(encoding='utf-8')); print('version=' + data['project']['version'])" >> $GITHUB_OUTPUT
+
       - name: Download Windows build
         uses: actions/download-artifact@v8
         with:
           name: windows-build
           path: ./build
+
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: ./build/SubtitleTools-v1.0.${{ github.run_number }}-windows.zip
-          tag: v1.0.${{ github.run_number }}
+          artifacts: ./build/SubtitleTools-v${{ steps.version.outputs.version }}-windows.zip
+          tag: ${{ github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
           allowUpdates: true
           removeArtifacts: true
 
   publish-pypi:
     name: Publish wheels to PyPI
-    needs: build-wheels
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build-wheels, quality]
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v8
@@ -117,17 +178,13 @@ jobs:
           name: python-dist
           path: dist
 
-      - name: Setup python
+      - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.14'
+          python-version: "3.14"
 
       - name: Install Twine
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools
-          python -m pip install --upgrade wheel
-          python -m pip install --upgrade twine
+        run: python -m pip install --upgrade pip twine
 
       - name: Publish to PyPI
         env:

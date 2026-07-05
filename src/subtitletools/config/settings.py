@@ -199,13 +199,9 @@ def reset_config() -> None:
     _config.clear()
 
 
-# Initialize directories on import
-def _ensure_directories() -> None:
+# Initialize directories on first use (not at import time)
+def init_app_dirs() -> None:
     """Ensure application directories exist."""
     for dir_func in [get_app_data_dir, get_cache_dir, get_temp_dir, get_logs_dir]:
         directory = dir_func()
         directory.mkdir(parents=True, exist_ok=True)
-
-
-# Auto-initialize directories
-_ensure_directories()

@@ -105,8 +105,19 @@ class TkGenerator:
 class GoogleTranslator(Translator):
     """Google Translate implementation."""
 
-    def __init__(self, api_key: Optional[str] = None) -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, *, force_web: bool = False
+    ) -> None:
         self.api_key = api_key
+        self.force_web = force_web
+        if api_key and not force_web:
+            logger.info("Using Google Cloud Translation API")
+        else:
+            logger.warning(
+                "Using unofficial Google Translate web interface; "
+                "this may break without notice. For production use "
+                "--service google_cloud with --api-key."
+            )
         self.headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -237,7 +248,7 @@ class GoogleTranslator(Translator):
             return text
 
         # Use cloud API if available
-        if self.api_key:
+        if self.api_key and not self.force_web:
             return self._translate_with_api(text, src_lang, target_lang)
 
         # Use web interface
@@ -245,8 +256,15 @@ class GoogleTranslator(Translator):
 
     def _translate_with_api(self, text: str, src_lang: str, target_lang: str) -> str:
         """Translate using Google Cloud Translation API."""
+        if not self.api_key:
+            raise TranslationError("Google Cloud API key is required")
+
         try:
-            url = f"https://translation.googleapis.com/language/translate/v2?key={self.api_key}"
+            url = "https://translation.googleapis.com/language/translate/v2"
+            headers = {
+                "X-Goog-Api-Key": self.api_key,
+                "Content-Type": "application/json",
+            }
 
             data = {
                 "q": text,
@@ -255,7 +273,7 @@ class GoogleTranslator(Translator):
                 "format": "text",
             }
 
-            response = requests.post(url, json=data, timeout=30)
+            response = requests.post(url, json=data, headers=headers, timeout=30)
             response.raise_for_status()
 
             result = cast(Dict[str, Any], response.json())
@@ -440,8 +458,14 @@ class SubtitleTranslator:
 
     def _get_translator(self, service: str, api_key: Optional[str]) -> Translator:
         """Get translator instance for the specified service."""
-        if service in ["google", "google_cloud"]:
-            return GoogleTranslator(api_key)
+        if service == "google":
+            return GoogleTranslator(api_key=None, force_web=True)
+        if service == "google_cloud":
+            if not api_key:
+                raise TranslationError(
+                    "google_cloud service requires an API key via --api-key"
+                )
+            return GoogleTranslator(api_key=api_key, force_web=False)
         raise TranslationError(f"Unsupported translation service: {service}")
 
     def translate_text(
@@ -569,8 +593,14 @@ def get_translator(service: str, api_key: Optional[str] = None) -> Translator:
     Raises:
         TranslationError: If service is not supported
     """
-    if service in ["google", "google_cloud"]:
-        return GoogleTranslator(api_key)
+    if service == "google":
+        return GoogleTranslator(api_key=None, force_web=True)
+    if service == "google_cloud":
+        if not api_key:
+            raise TranslationError(
+                "google_cloud service requires an API key via --api-key"
+            )
+        return GoogleTranslator(api_key=api_key, force_web=False)
     raise TranslationError(f"Unsupported translation service: {service}")
 
 

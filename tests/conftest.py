@@ -11,6 +11,30 @@ import pytest
 import srt
 
 
+@pytest.fixture(autouse=True)
+def _bypass_cli_environment_validation(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Skip external dependency checks during unit tests."""
+    monkeypatch.setattr(
+        "subtitletools.cli.validate_environment",
+        lambda **_kwargs: [],
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Register custom markers used by this test suite."""
+    config.addinivalue_line("markers", "unit: unit tests")
+    config.addinivalue_line("markers", "integration: integration tests")
+
+
+def pytest_collection_modifyitems(
+    items: list[pytest.Item],
+) -> None:
+    """Mark all collected tests as unit tests unless already marked."""
+    for item in items:
+        if not item.get_closest_marker("integration"):
+            item.add_marker(pytest.mark.unit)
+
+
 @pytest.fixture
 def temp_dir() -> Generator[Path, None, None]:
     """Create a temporary directory for tests."""

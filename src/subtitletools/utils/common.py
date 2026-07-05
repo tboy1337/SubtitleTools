@@ -18,7 +18,10 @@ from ..config.settings import (
     SUPPORTED_AUDIO_EXTENSIONS,
     SUPPORTED_SUBTITLE_FORMATS,
     SUPPORTED_VIDEO_EXTENSIONS,
+    init_app_dirs,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def format_timestamp(seconds: float) -> str:
@@ -31,7 +34,8 @@ def format_timestamp(seconds: float) -> str:
         Formatted timestamp string in SRT format
     """
     td = timedelta(seconds=seconds)
-    hours, remainder = divmod(td.seconds, 3600)
+    total_seconds = int(td.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
     minutes, seconds_int = divmod(remainder, 60)
     milliseconds = int(td.microseconds / 1000)
     return f"{hours:02d}:{minutes:02d}:{seconds_int:02d},{milliseconds:03d}"
@@ -290,3 +294,61 @@ def get_system_info() -> Dict[str, Union[str, bool]]:
         info["torch_version"] = "Not installed"
 
     return info
+
+
+def check_execjs_runtime() -> bool:
+    """Return True if a JavaScript runtime is available for pyexecjs."""
+    try:
+        import execjs
+
+        runtime = execjs.get()
+        return runtime is not None and runtime.name != "Dummy"
+    except Exception as exc:
+        logger.debug("execjs runtime check failed: %s", exc)
+        return False
+
+
+def validate_environment(
+    *,
+    require_ffmpeg: bool = False,
+    translation_service: Optional[str] = None,
+    api_key: Optional[str] = None,
+    strict: bool = False,
+) -> List[str]:
+    """Validate external runtime dependencies before processing.
+
+    Returns:
+        List of error messages. Empty list means all required checks passed.
+    """
+    init_app_dirs()
+    errors: List[str] = []
+
+    from .audio import find_ffmpeg, find_ffprobe
+
+    ffmpeg_path = find_ffmpeg()
+    if require_ffmpeg and not ffmpeg_path:
+        errors.append(
+            "FFmpeg is required but was not found. Install FFmpeg and ensure it is on PATH."
+        )
+    elif not ffmpeg_path:
+        logger.warning("FFmpeg not found; video transcription will not be available")
+
+    if strict and not find_ffprobe():
+        errors.append(
+            "FFprobe is required in strict mode but was not found. Install FFmpeg with ffprobe."
+        )
+    elif not find_ffprobe():
+        logger.warning("FFprobe not found; audio duration validation may be limited")
+
+    if translation_service == "google_cloud" and not api_key:
+        errors.append(
+            "google_cloud translation requires --api-key (Google Cloud Translation API key)."
+        )
+
+    if translation_service == "google" and not api_key and not check_execjs_runtime():
+        errors.append(
+            "Google web translation requires a JavaScript runtime for pyexecjs "
+            "(install Node.js) or use --service google_cloud with --api-key."
+        )
+
+    return errors

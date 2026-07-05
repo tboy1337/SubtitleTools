@@ -4,8 +4,10 @@ This module provides end-to-end subtitle workflows that combine transcription,
 translation, and post-processing operations.
 """
 
+import hashlib
 import json
 import logging
+import os
 import tempfile
 import time
 from pathlib import Path
@@ -67,6 +69,33 @@ class WorkflowResults(TypedDict, total=False):
 
 class WorkflowError(Exception):
     """Exception raised for workflow errors."""
+
+
+def compute_workflow_id(
+    input_path: Path,
+    output_path: Path,
+    *,
+    whisper_model: str,
+    translation_service: str,
+    src_lang: str,
+    target_lang: str,
+    max_segment_length: Optional[int],
+    both: bool,
+) -> str:
+    """Derive a stable checkpoint identifier from workflow parameters."""
+    key_parts = [
+        str(input_path.resolve()),
+        str(output_path.resolve()),
+        whisper_model,
+        translation_service,
+        src_lang,
+        target_lang,
+        str(max_segment_length),
+        str(both),
+    ]
+    digest = hashlib.sha256("|".join(key_parts).encode("utf-8")).hexdigest()[:16]
+    safe_stem = input_path.stem[:32]
+    return f"transcribe_translate_{safe_stem}_{digest}"
 
 
 class CheckpointManager:
@@ -144,6 +173,8 @@ class SubtitleWorkflow:
             translation_service: Translation service to use
             api_key: Optional API key for translation service
         """
+        self.whisper_model = whisper_model
+        self.translation_service = translation_service
         self.transcriber = SubWhisperTranscriber(whisper_model)
         self.translator = SubtitleTranslator(translation_service, api_key)
         self.subtitle_processor = SubtitleProcessor()
@@ -166,6 +197,7 @@ class SubtitleWorkflow:
         resume: bool = True,
         progress_callback: Optional[Callable[[str, float], None]] = None,
         postprocess_operations: Optional[List[str]] = None,
+        convert_to: Optional[str] = None,
         **kwargs: Union[str, int, float, bool],
     ) -> WorkflowResults:
         """Complete workflow: transcribe video/audio and translate subtitles.
@@ -180,6 +212,7 @@ class SubtitleWorkflow:
             resume: Whether to resume from checkpoint
             progress_callback: Optional progress callback
             postprocess_operations: Optional list of post-processing operations
+            convert_to: Optional output format for post-processing conversion
             **kwargs: Additional options
 
         Returns:
@@ -195,8 +228,17 @@ class SubtitleWorkflow:
         else:
             output_path = Path(output_path)
 
-        # Create checkpoint manager
-        workflow_id = f"transcribe_translate_{input_path_obj.stem}_{int(time.time())}"
+        # Create checkpoint manager with stable ID for resume support
+        workflow_id = compute_workflow_id(
+            input_path_obj,
+            output_path,
+            whisper_model=self.whisper_model,
+            translation_service=self.translation_service,
+            src_lang=src_lang,
+            target_lang=target_lang,
+            max_segment_length=max_segment_length,
+            both=both,
+        )
         checkpoint_manager = CheckpointManager(workflow_id)
 
         # Check for existing checkpoint
@@ -236,12 +278,21 @@ class SubtitleWorkflow:
                 logger.info("Step 1: Transcribing audio/video")
                 step_start = time.time()
 
+                workflow_temp_dir = (
+                    Path(tempfile.gettempdir()) / "subtitletools_workflow"
+                )
+                workflow_temp_dir.mkdir(exist_ok=True)
+
                 if is_video_file(input_path_obj):
                     transcribe_kwargs = {}
                     if src_lang != "auto":
                         transcribe_kwargs["language"] = src_lang
+                    temp_srt_path = (
+                        workflow_temp_dir / f"{input_path_obj.stem}_temp.srt"
+                    )
                     temp_srt_path_str = self.transcriber.transcribe_video(
                         input_path_obj,
+                        output_path=temp_srt_path,
                         max_segment_length=max_segment_length,
                         **transcribe_kwargs,
                     )
@@ -255,10 +306,9 @@ class SubtitleWorkflow:
                         max_segment_length=max_segment_length,
                         **transcribe_kwargs,
                     )
-                    # Create temp file in system temp directory to avoid overwriting test files
-                    temp_dir = Path(tempfile.gettempdir()) / "subtitletools_workflow"
-                    temp_dir.mkdir(exist_ok=True)
-                    temp_srt_path = temp_dir / f"{input_path_obj.stem}_temp.srt"
+                    temp_srt_path = (
+                        workflow_temp_dir / f"{input_path_obj.stem}_temp.srt"
+                    )
                     self.transcriber.generate_srt(
                         transcription_result["segments"], temp_srt_path
                     )
@@ -349,7 +399,7 @@ class SubtitleWorkflow:
                 logger.info("Translation completed in %.2f seconds", step_time)
 
             # Step 3: Post-processing (optional)
-            if postprocess_operations:
+            if postprocess_operations or convert_to:
                 if progress_callback:
                     progress_callback("Post-processing subtitles...", 0.8)
 
@@ -357,7 +407,9 @@ class SubtitleWorkflow:
                 step_start = time.time()
 
                 success = self._apply_postprocessing(
-                    output_path, postprocess_operations
+                    output_path,
+                    postprocess_operations or [],
+                    convert_to=convert_to,
                 )
 
                 step_time = time.time() - step_start
@@ -450,6 +502,8 @@ class SubtitleWorkflow:
         self,
         subtitle_path: Path,
         operations: List[str],
+        *,
+        convert_to: Optional[str] = None,
     ) -> bool:
         """Apply post-processing operations to subtitles."""
         try:
@@ -459,9 +513,11 @@ class SubtitleWorkflow:
             if not env_check.get("postprocess_available", True):
                 logger.debug("Post-processing available via native implementation")
 
+            output_format = convert_to if convert_to else "subrip"
+
             # Apply operations
             success = apply_subtitle_edit_postprocess(
-                subtitle_path, operations, "subrip"
+                subtitle_path, operations, output_format
             )
 
             if success:
@@ -559,6 +615,7 @@ class SubtitleWorkflow:
         input_paths: List[Union[str, Path]],
         output_dir: Union[str, Path],
         postprocess_operations: Optional[List[str]] = None,
+        convert_to: Optional[str] = None,
         **workflow_options: Union[str, int, float, bool],
     ) -> Dict[str, WorkflowResults]:
         """Process multiple files with the same workflow.
@@ -574,6 +631,13 @@ class SubtitleWorkflow:
         output_dir_obj = Path(output_dir)
         ensure_directory(output_dir_obj)
 
+        resolved_inputs = [Path(p).resolve() for p in input_paths]
+        common_root = Path(
+            os.path.commonpath([str(p.parent) for p in resolved_inputs])
+            if resolved_inputs
+            else "."
+        )
+
         results: Dict[str, WorkflowResults] = {}
         successful = 0
 
@@ -581,8 +645,16 @@ class SubtitleWorkflow:
             logger.info("Processing file %d/%d: %s", i, len(input_paths), input_path)
 
             try:
-                input_path_obj = Path(input_path)
-                output_path = output_dir_obj / input_path_obj.with_suffix(".srt").name
+                input_path_obj = Path(input_path).resolve()
+                try:
+                    relative = input_path_obj.relative_to(common_root)
+                    output_path = output_dir_obj / relative.with_suffix(".srt")
+                except ValueError:
+                    output_path = (
+                        output_dir_obj
+                        / f"{input_path_obj.stem}_{hash(input_path_obj) & 0xFFFF:04x}.srt"
+                    )
+                output_path.parent.mkdir(parents=True, exist_ok=True)
 
                 # Determine workflow type based on input
                 if is_video_file(input_path) or is_audio_file(input_path):
@@ -591,6 +663,7 @@ class SubtitleWorkflow:
                         input_path,
                         output_path,
                         postprocess_operations=postprocess_operations,
+                        convert_to=convert_to,
                         **cast(Any, workflow_options),
                     )
                 else:

@@ -357,11 +357,14 @@ class SubWhisperTranscriber:
 
         logger.info("Transcribing video: %s -> %s", video_path_obj, output_path)
 
+        extraction_temp_dir: Optional[Path] = None
         try:
             # Extract audio from video
             logger.info("Extracting audio from video...")
-            temp_dir = get_temp_dir()
-            audio_path = extract_audio(video_path_obj, temp_dir=str(temp_dir))
+            extraction_temp_dir = get_temp_dir()
+            audio_path = extract_audio(
+                video_path_obj, temp_dir=str(extraction_temp_dir)
+            )
 
             # Transcribe the extracted audio
             result = self.transcribe_audio(
@@ -377,8 +380,9 @@ class SubWhisperTranscriber:
         except Exception as e:
             raise TranscriptionError(f"Video transcription failed: {e}") from e
         finally:
-            # Clean up temporary files
-            cleanup_temp_dir()
+            # Clean up temporary files from this extraction
+            if extraction_temp_dir is not None:
+                cleanup_temp_dir(str(extraction_temp_dir))
 
     def generate_srt(
         self, segments: List[WhisperSegment], output_file: Union[str, Path]

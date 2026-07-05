@@ -19,6 +19,7 @@ from typing import Any, Dict, Optional, Union, cast
 
 # Global temporary directory for audio extraction
 _TEMP_DIR: Optional[str] = None
+_TEMP_DIRS: set[str] = set()
 _TEMP_DIR_LOCK = threading.Lock()
 
 logger = logging.getLogger(__name__)
@@ -154,11 +155,13 @@ def extract_audio(
         with _TEMP_DIR_LOCK:
             if temp_dir:
                 working_temp_dir = temp_dir
+                _TEMP_DIRS.add(temp_dir)
             else:
                 if _TEMP_DIR is None:
                     _TEMP_DIR = tempfile.mkdtemp(prefix="subtitletools_audio_")
                     logger.info("Created temporary directory: %s", _TEMP_DIR)
                 working_temp_dir = _TEMP_DIR
+                _TEMP_DIRS.add(_TEMP_DIR)
 
         # Create a safe filename based on the input video name
         basename_no_ext = video_path_obj.stem
@@ -250,23 +253,50 @@ def extract_audio(
         raise RuntimeError(f"Audio extraction failed: {e}") from e
 
 
-def cleanup_temp_dir() -> None:
-    """Clean up the temporary directory used for audio extraction."""
+def cleanup_temp_dir(temp_dir: Optional[str] = None) -> None:
+    """Clean up temporary directory used for audio extraction.
+
+    Args:
+        temp_dir: Specific directory to remove. If None, removes the global
+            mkdtemp directory when set.
+    """
     global _TEMP_DIR  # pylint: disable=global-statement
 
-    if _TEMP_DIR and os.path.exists(_TEMP_DIR):
-        logger.info("Cleaning up temporary directory: %s", _TEMP_DIR)
-        try:
-            with _TEMP_DIR_LOCK:
-                shutil.rmtree(_TEMP_DIR)
-            logger.info("Temporary directory cleaned up successfully")
+    targets: list[str] = []
+    with _TEMP_DIR_LOCK:
+        if temp_dir:
+            targets = [temp_dir]
+            _TEMP_DIRS.discard(temp_dir)
+            if _TEMP_DIR == temp_dir:
+                _TEMP_DIR = None
+        elif _TEMP_DIR:
+            targets = [_TEMP_DIR]
+            _TEMP_DIRS.discard(_TEMP_DIR)
             _TEMP_DIR = None
-        except (OSError, IOError) as e:
-            logger.error("Failed to clean up temporary directory %s: %s", _TEMP_DIR, e)
-        except Exception as e:
-            logger.error(
-                "Unexpected error cleaning up temporary directory %s: %s", _TEMP_DIR, e
-            )
+
+    for target in targets:
+        if os.path.exists(target):
+            logger.info("Cleaning up temporary directory: %s", target)
+            try:
+                shutil.rmtree(target)
+                logger.info("Temporary directory cleaned up successfully")
+            except (OSError, IOError) as e:
+                logger.error("Failed to clean up temporary directory %s: %s", target, e)
+            except Exception as e:
+                logger.error(
+                    "Unexpected error cleaning up temporary directory %s: %s",
+                    target,
+                    e,
+                )
+
+
+def cleanup_all_temp_dirs() -> None:
+    """Remove all registered audio extraction temporary directories."""
+    with _TEMP_DIR_LOCK:
+        dirs = list(_TEMP_DIRS)
+
+    for directory in dirs:
+        cleanup_temp_dir(directory)
 
 
 def get_audio_duration(audio_path: Union[str, Path]) -> Optional[float]:

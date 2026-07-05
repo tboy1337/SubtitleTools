@@ -12,6 +12,7 @@ import pytest
 
 from subtitletools.utils.common import (
     ThreadSafeCounter,
+    check_execjs_runtime,
     ensure_directory,
     format_timestamp,
     get_file_size_mb,
@@ -22,6 +23,7 @@ from subtitletools.utils.common import (
     safe_filename,
     setup_logging,
     validate_directory_exists,
+    validate_environment,
     validate_file_exists,
 )
 
@@ -61,6 +63,11 @@ class TestFormatTimestamp:
 
         result = format_timestamp(1.0009)  # 9000 microseconds = 9 milliseconds
         assert result == "00:00:01,000"  # Should round down
+
+    def test_format_timestamp_over_24_hours(self) -> None:
+        """Test timestamps beyond 24 hours use total elapsed time."""
+        result = format_timestamp(90061.0)  # 25:01:01,000
+        assert result == "25:01:01,000"
 
 
 class TestSetupLogging:
@@ -529,3 +536,75 @@ class TestGetSystemInfo:
 
         assert info["cwd"] == "/test/directory"
         mock_getcwd.assert_called_once()
+
+
+class TestCheckExecjsRuntime:
+    """Test check_execjs_runtime function."""
+
+    @patch("execjs.get")
+    def test_check_execjs_runtime_available(self, mock_get: Mock) -> None:
+        """Test execjs runtime detection when a real runtime exists."""
+        mock_get.return_value = Mock(name="Node.js")
+
+        assert check_execjs_runtime() is True
+
+    @patch("execjs.get", side_effect=RuntimeError("no runtime"))
+    def test_check_execjs_runtime_unavailable(self, mock_get: Mock) -> None:
+        """Test execjs runtime detection when lookup fails."""
+        assert check_execjs_runtime() is False
+
+
+class TestValidateEnvironment:
+    """Test validate_environment function."""
+
+    @patch("subtitletools.utils.common.check_execjs_runtime", return_value=True)
+    @patch("subtitletools.utils.audio.find_ffprobe", return_value="/usr/bin/ffprobe")
+    @patch("subtitletools.utils.audio.find_ffmpeg", return_value="/usr/bin/ffmpeg")
+    def test_validate_environment_all_ok(
+        self,
+        mock_ffmpeg: Mock,
+        mock_ffprobe: Mock,
+        mock_execjs: Mock,
+    ) -> None:
+        """Test environment validation when dependencies are present."""
+        errors = validate_environment(
+            require_ffmpeg=True,
+            translation_service="google",
+            strict=True,
+        )
+        assert errors == []
+
+    @patch("subtitletools.utils.audio.find_ffprobe", return_value=None)
+    @patch("subtitletools.utils.audio.find_ffmpeg", return_value=None)
+    def test_validate_environment_missing_ffmpeg(
+        self, mock_ffmpeg: Mock, mock_ffprobe: Mock
+    ) -> None:
+        """Test environment validation when FFmpeg is required but missing."""
+        errors = validate_environment(require_ffmpeg=True)
+        assert len(errors) == 1
+        assert "FFmpeg" in errors[0]
+
+    @patch("subtitletools.utils.audio.find_ffprobe", return_value=None)
+    @patch("subtitletools.utils.audio.find_ffmpeg", return_value="/usr/bin/ffmpeg")
+    def test_validate_environment_strict_missing_ffprobe(
+        self, mock_ffmpeg: Mock, mock_ffprobe: Mock
+    ) -> None:
+        """Test strict mode fails when FFprobe is missing."""
+        errors = validate_environment(strict=True)
+        assert len(errors) == 1
+        assert "FFprobe" in errors[0]
+
+    def test_validate_environment_google_cloud_requires_api_key(self) -> None:
+        """Test google_cloud service requires an API key."""
+        errors = validate_environment(translation_service="google_cloud")
+        assert len(errors) == 1
+        assert "API key" in errors[0]
+
+    @patch("subtitletools.utils.common.check_execjs_runtime", return_value=False)
+    def test_validate_environment_google_web_requires_execjs(
+        self, mock_execjs: Mock
+    ) -> None:
+        """Test google web translation requires a JavaScript runtime."""
+        errors = validate_environment(translation_service="google")
+        assert len(errors) == 1
+        assert "JavaScript runtime" in errors[0]
