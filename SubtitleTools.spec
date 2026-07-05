@@ -7,10 +7,10 @@ block_cipher = None
 root = Path(SPECPATH)
 
 a = Analysis(
-    [str(root / "src" / "subtitletools" / "cli.py")],
+    [str(root / "scripts" / "pyi_entry.py")],
     pathex=[str(root / "src")],
     binaries=[],
-    datas=[],
+    datas=[(str(root / "pyproject.toml"), ".")],
     hiddenimports=[
         "subtitletools",
         "subtitletools.__main__",
