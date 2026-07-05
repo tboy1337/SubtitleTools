@@ -1,7 +1,5 @@
 """PyInstaller hook: package torch for CPU inference only."""
 
-from PyInstaller.utils.hooks import collect_dynamic_libs, excludedimports
-
 # Distributed training, TensorBoard, CUDA, and TorchInductor are not used at runtime.
 excludedimports = [
     "tensorboard",
@@ -21,5 +19,3 @@ excludedimports = [
     "torch.distributed.tensor",
     "torch.utils.tensorboard",
 ]
-
-binaries = collect_dynamic_libs("torch")
