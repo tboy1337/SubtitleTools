@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -48,6 +49,14 @@ def _isort_args(*, fix: bool) -> list[str]:
     return args
 
 
+def _pytest_args() -> list[str]:
+    """Build pytest command, enabling xdist when available."""
+    args = _python_m("pytest", "-m", "not integration")
+    if importlib.util.find_spec("xdist") is not None:
+        args.extend(["-n", "auto"])
+    return args
+
+
 def main() -> None:
     """Execute formatting, linting, security, and test checks."""
     parser = argparse.ArgumentParser(description="Run SubtitleTools quality checks.")
@@ -68,7 +77,13 @@ def main() -> None:
         ("black", _python_m("black", "--check", *_CHECK_DIRS)),
         (
             "mypy",
-            _python_m("mypy", "src/subtitletools", "tests", verify_script),
+            _python_m(
+                "mypy",
+                "src/subtitletools",
+                "tests",
+                verify_script,
+                "scripts/generate_file_version_info.py",
+            ),
         ),
         (
             "pylint (package)",
@@ -85,7 +100,7 @@ def main() -> None:
             "pip-audit",
             _python_m("pip_audit", "-r", "requirements-dev.txt"),
         ),
-        ("pytest", _python_m("pytest")),
+        ("pytest", _pytest_args()),
     ]
 
     for name, step_args in steps:

@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 __version__ = get_version()
 __author__ = "tboy1337"
-__email__ = "tboy1337.unchanged733@aleeas.com"
+__email__ = "tboy1337@proton.me"
 
 # Public API exports
 __all__: List[str] = [

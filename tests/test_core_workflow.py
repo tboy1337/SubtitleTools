@@ -3,7 +3,7 @@
 import json
 import tempfile
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Dict, List, Union, cast
 from unittest.mock import Mock, patch
 
 import pytest
@@ -77,6 +77,72 @@ class TestComputeWorkflowId:
             both=True,
         )
         assert base != different
+
+    def test_compute_workflow_id_includes_postprocess(self, tmp_path: Path) -> None:
+        """Test workflow ID changes when post-processing options differ."""
+        input_path = tmp_path / "video.mp4"
+        output_path = tmp_path / "output.srt"
+        input_path.write_bytes(b"video")
+
+        base = compute_workflow_id(
+            input_path,
+            output_path,
+            whisper_model="small",
+            translation_service="google",
+            src_lang="en",
+            target_lang="es",
+            max_segment_length=80,
+            both=True,
+        )
+        with_postprocess = compute_workflow_id(
+            input_path,
+            output_path,
+            whisper_model="small",
+            translation_service="google",
+            src_lang="en",
+            target_lang="es",
+            max_segment_length=80,
+            both=True,
+            postprocess_operations=["/fixcommonerrors"],
+            convert_to="vtt",
+        )
+        assert base != with_postprocess
+
+
+class TestCheckpointMerge:
+    """Test checkpoint merge and resume edge cases."""
+
+    def test_save_checkpoint_merge_preserves_fields(self) -> None:
+        """Test merge=True preserves existing checkpoint fields on error."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with patch(
+                "subtitletools.core.workflow.get_cache_dir", return_value=Path(tmp_dir)
+            ):
+                manager = CheckpointManager("merge_test")
+                manager.save_checkpoint(
+                    {
+                        "step": "translation",
+                        "temp_srt_path": "/tmp/temp.srt",
+                        "results": {"status": "in_progress"},
+                    }
+                )
+                manager.save_checkpoint(
+                    {"last_error": "translation failed"}, merge=True
+                )
+                loaded = manager.load_checkpoint()
+                assert loaded is not None
+                assert loaded["step"] == "translation"
+                assert loaded["temp_srt_path"] == "/tmp/temp.srt"
+                assert loaded["last_error"] == "translation failed"
+
+    def test_normalize_resume_step_legacy_error(self) -> None:
+        """Test legacy error checkpoints resume from last_good_step."""
+        from subtitletools.core.workflow import _normalize_resume_step
+
+        step = _normalize_resume_step(
+            {"step": "error", "last_good_step": "postprocessing"}
+        )
+        assert step == "postprocessing"
 
 
 class TestWorkflowError:
@@ -1256,7 +1322,10 @@ class TestWorkflowMissingCoverage:
 
                     assert len(result) >= 1
                     mock_translate.assert_called_once_with(
-                        "subtitle.srt", Path("output/subtitle.srt")
+                        "subtitle.srt",
+                        Path("output/subtitle.srt"),
+                        postprocess_operations=None,
+                        convert_to=None,
                     )
 
     def test_get_workflow_info_native_processing(self) -> None:
@@ -1302,3 +1371,58 @@ class TestWorkflowMissingCoverage:
                         translator_info = cast(dict[str, Any], info["translator"])
                         assert transcriber_info["model"] == "large"
                         assert translator_info["service"] == "google_cloud"
+
+
+class TestPostprocessingResume:
+    """Test workflow resume from post-processing checkpoint."""
+
+    @patch("subtitletools.core.workflow.validate_file_exists")
+    def test_transcribe_and_translate_resume_postprocessing(
+        self, mock_validate: Mock
+    ) -> None:
+        """Resume from postprocessing checkpoint runs only post-processing."""
+        input_path = Path("test.mp4")
+        output_path = Path("output.srt")
+        mock_validate.return_value = input_path
+
+        with patch("subtitletools.core.workflow.SubWhisperTranscriber"):
+            with patch("subtitletools.core.workflow.SubtitleTranslator"):
+                with patch("subtitletools.core.workflow.SubtitleProcessor"):
+                    with patch(
+                        "subtitletools.core.workflow.CheckpointManager"
+                    ) as mock_checkpoint_class:
+                        with patch(
+                            "subtitletools.core.workflow.get_file_size_mb",
+                            return_value=1.0,
+                        ):
+                            mock_checkpoint = Mock()
+                            mock_checkpoint.load_checkpoint.return_value = {
+                                "step": "postprocessing",
+                                "output_path": str(output_path),
+                                "results": {
+                                    "steps_completed": [
+                                        "transcription",
+                                        "translation",
+                                    ],
+                                    "transcription_time": 10.0,
+                                    "translation_time": 5.0,
+                                },
+                            }
+                            mock_checkpoint_class.return_value = mock_checkpoint
+
+                            workflow = SubtitleWorkflow()
+                            with patch.object(
+                                workflow,
+                                "_apply_postprocessing",
+                                return_value=True,
+                            ) as mock_postprocess:
+                                result = workflow.transcribe_and_translate(
+                                    input_path,
+                                    output_path,
+                                    resume=True,
+                                    postprocess_operations=["/fixcommonerrors"],
+                                )
+
+                                mock_postprocess.assert_called_once()
+                                assert result["status"] == "completed"
+                                assert "postprocessing" in result["steps_completed"]

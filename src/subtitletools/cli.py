@@ -22,6 +22,9 @@ from .config.settings import (
     SUPPORTED_SUBTITLE_FORMATS,
     SUPPORTED_TRANSLATION_SERVICES,
     WHISPER_MODELS,
+    get_env_google_api_key,
+    get_env_log_file,
+    get_env_whisper_model,
 )
 from .core.subtitle import SubtitleError, SubtitleProcessor
 from .core.transcription import SubWhisperTranscriber, TranscriptionError
@@ -47,6 +50,25 @@ if TYPE_CHECKING:
     from argparse import _SubParsersAction
 
 logger = logging.getLogger(__name__)
+
+
+def _apply_env_defaults(parsed_args: argparse.Namespace) -> None:
+    """Apply environment variable fallbacks for CLI options."""
+    if not getattr(parsed_args, "log_file", None):
+        env_log = get_env_log_file()
+        if env_log:
+            parsed_args.log_file = env_log
+
+    api_key = getattr(parsed_args, "api_key", None)
+    if not api_key:
+        env_api_key = get_env_google_api_key()
+        if env_api_key:
+            parsed_args.api_key = env_api_key
+
+    env_model = get_env_whisper_model()
+    if env_model and hasattr(parsed_args, "model"):
+        if parsed_args.model == DEFAULT_WHISPER_MODEL:
+            parsed_args.model = env_model
 
 
 def _validate_max_segment_length(max_segment_length: Optional[int]) -> Optional[str]:
@@ -932,6 +954,8 @@ def handle_workflow_command(args: argparse.Namespace) -> int:
                     src_lang=cast(Any, args).src_lang,
                     target_lang=cast(Any, args).target_lang,
                     both=cast(Any, args).both,
+                    postprocess_operations=postprocess_ops,
+                    convert_to=cast(Any, args).convert_to,
                 )
                 print(f"\nWorkflow completed: {result['output_path']}")
                 print(f"Total time: {result['total_time']:.2f} seconds")
@@ -966,6 +990,7 @@ def main(args: Optional[List[str]] = None) -> int:
     try:
         parser = create_parser()
         parsed_args = parser.parse_args(args)
+        _apply_env_defaults(parsed_args)
 
         # Setup logging
         log_level = logging.DEBUG if parsed_args.verbose else logging.INFO

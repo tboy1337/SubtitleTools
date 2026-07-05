@@ -37,7 +37,9 @@ git tag v1.0.3
 git push origin v1.0.3
 ```
 
-CI runs quality checks, builds wheels and the Windows executable, creates a GitHub Release, and publishes to PyPI.
+CI on pull requests and pushes to `main` runs **quality checks only** (`python scripts/verify.py`). Tag pushes (`v*`) additionally build wheels, the Windows executable, create a GitHub Release, and publish to PyPI.
+
+The Windows executable is built with PyInstaller using [`SubtitleTools.spec`](../SubtitleTools.spec) (large download due to PyTorch/Whisper).
 
 ## Project layout
 

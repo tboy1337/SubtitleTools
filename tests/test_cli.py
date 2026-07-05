@@ -1469,3 +1469,47 @@ class TestAdditionalCliCoverage:
         if TYPE_CHECKING:
             pass  # This line should be covered
         assert True
+
+
+class TestEnvDefaults:
+    """Test environment variable CLI fallbacks."""
+
+    def test_apply_env_defaults_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test API key is read from environment."""
+        monkeypatch.setenv("SUBTITLETOOLS_GOOGLE_API_KEY", "env-secret")
+        args = argparse.Namespace(api_key=None, log_file=None, model="small")
+        from subtitletools.cli import _apply_env_defaults
+
+        _apply_env_defaults(args)
+        assert args.api_key == "env-secret"
+
+    def test_apply_env_defaults_log_file(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test log file path is read from environment."""
+        monkeypatch.setenv("SUBTITLETOOLS_LOG_FILE", "C:\\logs\\subtitletools.log")
+        args = argparse.Namespace(api_key=None, log_file=None, model="small")
+        from subtitletools.cli import _apply_env_defaults
+
+        _apply_env_defaults(args)
+        assert args.log_file == "C:\\logs\\subtitletools.log"
+
+    def test_apply_env_defaults_whisper_model(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test whisper model is read from environment when CLI uses default."""
+        monkeypatch.setenv("SUBTITLETOOLS_WHISPER_MODEL", "medium")
+        args = argparse.Namespace(api_key=None, log_file=None, model="small")
+        from subtitletools.cli import _apply_env_defaults
+
+        _apply_env_defaults(args)
+        assert args.model == "medium"
+
+
+@pytest.mark.env_validation
+class TestCliEnvironmentValidation:
+    """Test CLI environment validation without autouse bypass."""
+
+    @patch("subtitletools.utils.audio.find_ffmpeg", return_value=None)
+    def test_main_transcribe_fails_without_ffmpeg(self, _mock_ffmpeg: Mock) -> None:
+        """Test transcribe command fails when FFmpeg is required but missing."""
+        result = main(["transcribe", "test.mp4"])
+        assert result == 1

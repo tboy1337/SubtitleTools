@@ -447,33 +447,32 @@ class TestSubtitleTranslator:
         result = translator.translate_lines([])
         assert not result
 
-    @patch("subtitletools.core.translation.GoogleTranslator.translate_lines")
-    def test_translate_lines_success(self, mock_translate_lines: Mock) -> None:
+    @patch("subtitletools.core.translation.GoogleTranslator.translate")
+    def test_translate_lines_success(self, mock_translate: Mock) -> None:
         """Test successful lines translation."""
-        mock_translate_lines.return_value = "Hola\nmundo"
+        mock_translate.side_effect = ["Hola", "mundo"]
 
         translator = SubtitleTranslator("google")
         result = translator.translate_lines(["Hello", "world"], "en", "es")
 
         assert result == ["Hola", "mundo"]
-        mock_translate_lines.assert_called_once()
+        assert mock_translate.call_count == 2
 
-    @patch("subtitletools.core.translation.GoogleTranslator.translate_lines")
-    def test_translate_lines_with_empty_lines(self, mock_translate_lines: Mock) -> None:
+    @patch("subtitletools.core.translation.GoogleTranslator.translate")
+    def test_translate_lines_with_empty_lines(self, mock_translate: Mock) -> None:
         """Test lines translation with empty lines."""
-        mock_translate_lines.return_value = "Hola\nmundo"
+        mock_translate.side_effect = ["Hola", "mundo"]
 
         translator = SubtitleTranslator("google")
         result = translator.translate_lines(["Hello", "", "world"], "en", "es")
 
-        # Empty line should be preserved
         assert len(result) == 3
         assert result[1] == ""
 
-    @patch("subtitletools.core.translation.GoogleTranslator.translate_lines")
-    def test_translate_lines_exception(self, mock_translate_lines: Mock) -> None:
+    @patch("subtitletools.core.translation.GoogleTranslator.translate")
+    def test_translate_lines_exception(self, mock_translate: Mock) -> None:
         """Test lines translation with exception."""
-        mock_translate_lines.side_effect = Exception("Translation failed")
+        mock_translate.side_effect = Exception("Translation failed")
 
         translator = SubtitleTranslator("google")
 

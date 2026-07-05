@@ -1,23 +1,24 @@
 # Translation Services
 
-SubtitleTools supports two Google translation modes:
+SubtitleTools supports two Google translation modes.
 
-## `google` (default, web interface)
+## `google` (default)
 
-- Uses the unofficial Google Translate web API
-- Requires a JavaScript runtime for `pyexecjs` (install [Node.js](https://nodejs.org/))
-- Subject to rate limits and may break without notice
-- Suitable for light personal use
+Uses the Google Translate web interface via `pyexecjs`.
+
+- Requires a JavaScript runtime (typically [Node.js](https://nodejs.org/)) when no API key is set
+- Default for all translate/workflow commands
 
 ```bash
 subtitletools translate input.srt output.srt --service google
 ```
 
-## `google_cloud` (production recommended)
+## `google_cloud`
 
-- Uses the official [Google Cloud Translation API](https://cloud.google.com/translate)
-- Requires `--api-key` with a valid API key
-- More stable for repeated or automated use
+Uses the [Google Cloud Translation API](https://cloud.google.com/translate).
+
+- Requires `--api-key` or `SUBTITLETOOLS_GOOGLE_API_KEY`
+- Same HTTP client; API key is sent via the `X-Goog-Api-Key` header
 
 ```bash
 subtitletools translate input.srt output.srt \
@@ -25,8 +26,13 @@ subtitletools translate input.srt output.srt \
   --api-key YOUR_API_KEY
 ```
 
-API keys are sent via the `X-Goog-Api-Key` header, not in the URL.
+Or:
+
+```bash
+set SUBTITLETOOLS_GOOGLE_API_KEY=YOUR_API_KEY
+subtitletools translate input.srt output.srt --service google_cloud
+```
 
 ## Rate limiting
 
-The web translator retries with exponential backoff on HTTP 429 responses. For large batches, prefer `google_cloud`.
+The web translator retries with exponential backoff on HTTP 429 responses. Large batches may take longer on the `google` service.

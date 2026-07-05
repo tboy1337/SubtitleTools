@@ -24,7 +24,24 @@ This was fixed in 1.0.2+. Update to the latest release.
 
 ## Resume does not continue
 
-Checkpoints use a stable ID derived from input path and options. Changing `--target-lang` or `--model` starts a new checkpoint. Use the same options to resume.
+Checkpoints use a stable ID derived from input path, model, languages, and post-processing options. Changing `--target-lang`, `--model`, or post-process flags starts a new checkpoint. Use the same options to resume.
+
+Resume applies to **video/audio** `workflow` runs only, not standalone `translate`.
+
+### Corrupt checkpoint
+
+**Symptom:** `Corrupt checkpoint: missing temp_srt_path`
+
+**Fix:** Delete checkpoint files under:
+
+- Windows: `%APPDATA%\SubtitleTools\cache\checkpoints\`
+- Linux/macOS: `~/.subtitletools/cache/checkpoints/`
+
+Then rerun with `--no-resume` or allow a fresh checkpoint.
+
+## Misaligned translated subtitles
+
+If subtitle cues do not match translations, ensure you are on the latest version (per-cue translation mapping). Re-run translation on the source SRT if upgrading from an older build.
 
 ## Out of memory during transcription
 

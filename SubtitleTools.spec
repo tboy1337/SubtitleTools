@@ -1,51 +1,45 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""
-PyInstaller specification file for SubtitleTools.
+# PyInstaller specification for SubtitleTools Windows executable.
 
-Generate ``file_version_info.txt`` before building:
-    python scripts/generate_file_version_info.py
-
-This spec file includes optimizations to reduce antivirus false positives:
-- Version information resource for legitimacy
-- Disabled UPX compression (--noupx) which triggers heuristic detection
-- Console application metadata
-- Company and product information
-"""
-
-from PyInstaller.utils.hooks import collect_all
+from pathlib import Path
 
 block_cipher = None
-
-torch_datas, torch_binaries, torch_hiddenimports = collect_all("torch")
-whisper_datas, whisper_binaries, whisper_hiddenimports = collect_all("whisper")
-jieba_datas, jieba_binaries, jieba_hiddenimports = collect_all("jieba")
-
-hiddenimports = [
-    "subtitletools",
-    "whisper",
-    "torch",
-    "jieba",
-    "srt",
-    "scipy",
-    "numpy",
-    "tqdm",
-    "pyexecjs",
-    *torch_hiddenimports,
-    *whisper_hiddenimports,
-    *jieba_hiddenimports,
-]
+root = Path(SPECPATH)
 
 a = Analysis(
-    ["src/subtitletools/__main__.py"],
-    pathex=["src"],
-    binaries=torch_binaries + whisper_binaries + jieba_binaries,
-    datas=[
-        ("pyproject.toml", "."),
-        *torch_datas,
-        *whisper_datas,
-        *jieba_datas,
+    [str(root / "src" / "subtitletools" / "cli.py")],
+    pathex=[str(root / "src")],
+    binaries=[],
+    datas=[],
+    hiddenimports=[
+        "subtitletools",
+        "subtitletools.__main__",
+        "subtitletools._version",
+        "subtitletools.cli",
+        "subtitletools.config",
+        "subtitletools.config.settings",
+        "subtitletools.core",
+        "subtitletools.core.subtitle",
+        "subtitletools.core.transcription",
+        "subtitletools.core.translation",
+        "subtitletools.core.workflow",
+        "subtitletools.utils",
+        "subtitletools.utils.audio",
+        "subtitletools.utils.common",
+        "subtitletools.utils.encoding",
+        "subtitletools.utils.format_converter",
+        "subtitletools.utils.postprocess",
+        "subtitletools.utils.subtitle_fixes",
+        "whisper",
+        "torch",
+        "scipy",
+        "numpy",
+        "tqdm",
+        "execjs",
+        "srt",
+        "requests",
+        "jieba",
     ],
-    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -69,7 +63,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,
+    upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,
@@ -78,5 +72,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    version="file_version_info.txt",
+    version=str(root / "file_version_info.txt"),
 )

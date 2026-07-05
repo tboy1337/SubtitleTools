@@ -6,6 +6,7 @@ A tool for subtitle processing workflows, including extraction, conversion and o
 
 - [Installation](docs/installation.md)
 - [Usage](docs/usage.md)
+- [CLI reference](docs/cli-reference.md)
 - [Translation services](docs/translation.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Development](docs/development.md)
@@ -29,7 +30,7 @@ SubtitleTools provides a complete subtitle processing pipeline:
 - **Batch Translation**: Translate multiple subtitle files at once
 
 ### 🔤 Encoding Conversion
-- **Multiple Encodings**: Support for 28+ character encodings
+- **Multiple Encodings**: Support for 37 character encodings
 - **Language-Specific Recommendations**: Smart encoding suggestions based on language
 - **Batch Encoding**: Convert multiple files to various encodings
 - **Auto-Detection**: Automatic source encoding detection
@@ -45,7 +46,7 @@ SubtitleTools provides a complete subtitle processing pipeline:
 ### 🔄 Workflows
 - **End-to-End Processing**: Video → Subtitles → Translation → Post-processing
 - **Flexible Workflows**: Mix and match operations as needed
-- **Resume Capability**: Resume interrupted operations
+- **Resume Capability**: Resume interrupted **video/audio workflow** jobs (see [CLI reference](docs/cli-reference.md))
 - **Comprehensive Logging**: Detailed logging for troubleshooting
 
 ## 📦 Installation
@@ -283,8 +284,8 @@ Tests enforce coverage reporting (see `pytest.ini` and `.coveragerc`). `py scrip
 - Consider splitting very large files
 
 ### Translation
-- Use API keys for better rate limits
-- Enable resume functionality for large jobs
+- Use API keys for `google_cloud` when you need higher throughput
+- For long video jobs, use `workflow` with `--resume` (video/audio path only)
 - Process during off-peak hours
 
 ### Post-Processing  

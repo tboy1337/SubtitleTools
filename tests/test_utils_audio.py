@@ -126,10 +126,11 @@ class TestFindFFmpeg:
 
         assert result is None
 
+    @patch("subtitletools.utils.audio._discover_winget_ffmpeg_paths", return_value=[])
     @patch("subprocess.run")
     @patch("os.path.isfile")
     def test_find_ffmpeg_file_check_exception(
-        self, mock_isfile: Mock, mock_run: Mock
+        self, mock_isfile: Mock, mock_run: Mock, _mock_winget: Mock
     ) -> None:
         """Test exception during file existence check."""
         # PATH search fails
@@ -661,15 +662,30 @@ class TestValidateAudioFile:
 
     @patch("subtitletools.utils.audio.get_audio_duration")
     def test_validate_audio_file_no_duration(self, mock_duration: Mock) -> None:
-        """Test validating audio file with no duration."""
+        """Test validating audio file with no duration proceeds by default."""
         mock_duration.return_value = None
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-            tmp.write(b"fake audio content" * 50)  # > 100 bytes
+            tmp.write(b"fake audio content" * 50)
             tmp_path = tmp.name
 
         try:
             result = validate_audio_file(tmp_path)
+            assert result is True
+        finally:
+            Path(tmp_path).unlink(missing_ok=True)
+
+    @patch("subtitletools.utils.audio.get_audio_duration")
+    def test_validate_audio_file_no_duration_strict(self, mock_duration: Mock) -> None:
+        """Test strict mode rejects audio when duration is unknown."""
+        mock_duration.return_value = None
+
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp.write(b"fake audio content" * 50)
+            tmp_path = tmp.name
+
+        try:
+            result = validate_audio_file(tmp_path, strict=True)
             assert result is False
         finally:
             Path(tmp_path).unlink(missing_ok=True)
@@ -797,10 +813,11 @@ class TestAdditionalAudioCoverage:
 
         assert result == "/usr/bin/ffmpeg"
 
+    @patch("subtitletools.utils.audio._discover_winget_ffmpeg_paths", return_value=[])
     @patch("os.path.isfile")
     @patch("subprocess.run")
     def test_find_ffmpeg_common_locations(
-        self, mock_run: Mock, mock_isfile: Mock
+        self, mock_run: Mock, mock_isfile: Mock, _mock_winget: Mock
     ) -> None:
         """Test finding FFmpeg in common locations."""
         mock_run.return_value = Mock(returncode=1)  # Not in PATH
@@ -909,8 +926,11 @@ class TestAdditionalAudioCoverage:
 
         assert result is None
 
+    @patch("subtitletools.utils.audio._discover_winget_ffmpeg_paths", return_value=[])
     @patch("os.path.isfile")
-    def test_find_ffmpeg_location_exception(self, mock_isfile: Mock) -> None:
+    def test_find_ffmpeg_location_exception(
+        self, mock_isfile: Mock, _mock_winget: Mock
+    ) -> None:
         """Test find_ffmpeg exception when checking common locations."""
         mock_isfile.side_effect = Exception("Permission denied")
 

@@ -113,15 +113,11 @@ class GoogleTranslator(Translator):
         if api_key and not force_web:
             logger.info("Using Google Cloud Translation API")
         else:
-            logger.warning(
-                "Using unofficial Google Translate web interface; "
-                "this may break without notice. For production use "
-                "--service google_cloud with --api-key."
-            )
+            logger.debug("Using Google Translate web interface")
         self.headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+                "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
             )
         }
         self.tk_gen = TkGenerator()
@@ -138,19 +134,19 @@ class GoogleTranslator(Translator):
         self.user_agents = [
             (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36"
+                "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
             ),
             (
                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 "
-                "(KHTML, like Gecko) Version/15.1 Safari/605.1.15"
+                "(KHTML, like Gecko) Version/18.2 Safari/605.1.15"
             ),
             (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:94.0) "
-                "Gecko/20100101 Firefox/94.0"
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) "
+                "Gecko/20100101 Firefox/133.0"
             ),
             (
                 "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
+                "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
             ),
         ]
 
@@ -531,31 +527,26 @@ class SubtitleTranslator:
             return []
 
         try:
-            # Filter out empty lines but remember their positions
-            non_empty_lines: List[str] = []
-            line_mapping: Dict[int, int] = {}
-
-            for i, line in enumerate(lines):
-                if line.strip():
-                    line_mapping[len(non_empty_lines)] = i
-                    non_empty_lines.append(line)
-
-            if not non_empty_lines:
+            non_empty_indices = [i for i, line in enumerate(lines) if line.strip()]
+            if not non_empty_indices:
                 return lines
 
-            # Translate non-empty lines
-            translated_text = self.translator.translate_lines(
-                non_empty_lines, src_lang, target_lang, progress_callback
-            )
+            result = list(lines)
+            total = len(non_empty_indices)
 
-            translated_lines = translated_text.split("\n")
+            for progress_idx, line_index in enumerate(non_empty_indices):
+                if progress_callback:
+                    progress_callback(
+                        progress_idx,
+                        total,
+                        f"Translating line {progress_idx + 1}/{total}",
+                    )
 
-            # Reconstruct original structure
-            result = lines.copy()
-            for j, translated_line in enumerate(translated_lines):
-                if j in line_mapping:
-                    original_index = line_mapping[j]
-                    result[original_index] = translated_line
+                result[line_index] = self.translator.translate(
+                    lines[line_index],
+                    src_lang,
+                    target_lang,
+                )
 
             return result
 
