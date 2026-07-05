@@ -156,13 +156,17 @@ class TestSubtitleProcessor:
         assert output_file.exists()
         assert output_file.parent.exists()
 
-    def test_save_file_write_error(self, sample_subtitles: list[srt.Subtitle]) -> None:
+    def test_save_file_write_error(
+        self, temp_dir: Path, sample_subtitles: list[srt.Subtitle]
+    ) -> None:
         """Test saving file with write error."""
-        # Use a path that will definitely fail on Windows
-        invalid_path = "C:\\invalid|<>:?*/path/output.srt"
+        # Parent exists as a file, so directory creation fails on all platforms
+        blocking_file = temp_dir / "blocking"
+        blocking_file.write_text("block", encoding="utf-8")
+        invalid_path = blocking_file / "output.srt"
 
         with pytest.raises(SubtitleError, match="Error saving subtitle file"):
-            self.processor.save_file(sample_subtitles, invalid_path)
+            self.processor.save_file(sample_subtitles, str(invalid_path))
 
     def test_extract_text(self, sample_subtitles: list[srt.Subtitle]) -> None:
         """Test extracting text from subtitles."""

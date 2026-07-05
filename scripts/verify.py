@@ -98,7 +98,7 @@ def main() -> None:
         ),
         (
             "pip-audit",
-            _python_m("pip_audit", "-r", "requirements-dev.txt"),
+            _python_m("pip_audit"),
         ),
         ("pytest", _pytest_args()),
     ]

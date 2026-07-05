@@ -78,7 +78,7 @@ class TestConfigurationManagement:
 class TestDirectoryFunctions:
     """Test directory-related functions."""
 
-    @patch("os.name", "nt")
+    @pytest.mark.skipif(os.name != "nt", reason="Windows-specific test")
     @patch.dict(os.environ, {"APPDATA": "C:\\Users\\Test\\AppData\\Roaming"})
     def test_get_app_data_dir_windows(self) -> None:
         """Test getting app data directory on Windows."""
@@ -94,7 +94,7 @@ class TestDirectoryFunctions:
         # On actual Unix systems, this would test the Unix path logic
         pytest.skip("Unix-specific test not applicable on Windows")
 
-    @patch("os.name", "nt")
+    @pytest.mark.skipif(os.name != "nt", reason="Windows-specific test")
     @patch.dict(os.environ, {}, clear=True)  # Clear APPDATA
     @patch("os.path.expanduser")
     def test_get_app_data_dir_windows_no_appdata(self, mock_expanduser: Any) -> None:

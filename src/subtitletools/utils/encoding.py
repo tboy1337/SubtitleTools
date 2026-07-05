@@ -42,7 +42,7 @@ def detect_encoding(
                 if len(content) > 100:
                     logger.debug("Detected encoding: %s", encoding_name)
                     return encoding_name
-        except UnicodeDecodeError:
+        except UnicodeError:
             continue
         except (OSError, IOError) as e:
             logger.debug("Error trying encoding %s: %s", encoding_name, e)
