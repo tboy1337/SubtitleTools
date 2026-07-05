@@ -18,7 +18,6 @@ _unused_runtime_modules = [
     "tensorboard",
     "tkinter",
     "torch._inductor",
-    "torch.cuda",
     "torch.distributed",
     "torch.utils.tensorboard",
 ]

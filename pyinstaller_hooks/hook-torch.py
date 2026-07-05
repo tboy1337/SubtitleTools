@@ -4,7 +4,6 @@
 excludedimports = [
     "tensorboard",
     "torch._inductor",
-    "torch.cuda",
     "torch.distributed",
     "torch.distributed.algorithms",
     "torch.distributed.autograd",
