@@ -1,23 +1,17 @@
 # Main Requirements
 -r requirements.txt
 
-# Core Testing Packages
+# Testing (used by pytest.ini and tests/)
 pytest
-pytest-asyncio
 pytest-timeout
-pytest-xdist
 pytest-mock
 pytest-cov
-pytest-html
-pytest-json-report
-pytest-benchmark
-pytest-rerunfailures
 
-# Linting and code quality
+# Linting and code quality (used by scripts/verify.py)
 pylint
 mypy
+autopep8
 black
 isort
-
-# Development dependencies
-twine
+bandit
+pip-audit

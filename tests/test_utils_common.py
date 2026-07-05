@@ -496,7 +496,6 @@ class TestGetSystemInfo:
         assert "python_version" in info
         assert "cwd" in info
         assert "torch_version" in info
-        assert "cuda_available" in info
 
         assert info["platform"] == sys.platform
         assert info["python_version"] == sys.version
@@ -504,15 +503,12 @@ class TestGetSystemInfo:
 
     def test_get_system_info_with_torch(self) -> None:
         """Test system info with torch available."""
-        # Mock torch_module directly in the common module
         with patch("subtitletools.utils.common.torch_module") as mock_torch:
             mock_torch.__version__ = "1.12.0"
-            mock_torch.cuda.is_available.return_value = True
 
             info = get_system_info()
 
             assert info["torch_version"] == "1.12.0"
-            assert info["cuda_available"] is True
 
     def test_get_system_info_no_torch(self) -> None:
         """Test system info without torch (ImportError)."""
@@ -521,7 +517,6 @@ class TestGetSystemInfo:
             info = get_system_info()
 
             assert info["torch_version"] == "Not installed"
-            assert info["cuda_available"] is False
 
     @patch("os.getcwd")
     def test_get_system_info_cwd_exception(self, mock_getcwd: Mock) -> None:

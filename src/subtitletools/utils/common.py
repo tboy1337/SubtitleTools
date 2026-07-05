@@ -286,9 +286,7 @@ def get_system_info() -> Dict[str, Union[str, bool]]:
     # Check for torch availability
     if torch_module is not None:
         info["torch_version"] = str(cast(Any, torch_module).__version__)
-        info["cuda_available"] = bool(cast(Any, torch_module).cuda.is_available())
     else:
         info["torch_version"] = "Not installed"
-        info["cuda_available"] = False
 
     return info

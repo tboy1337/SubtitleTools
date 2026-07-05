@@ -17,7 +17,9 @@ Main components:
 
 from typing import List
 
-__version__ = "1.0.0"
+from ._version import get_version
+
+__version__ = get_version()
 __author__ = "tboy1337"
 __email__ = "tboy1337.unchanged733@aleeas.com"
 

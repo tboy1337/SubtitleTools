@@ -21,7 +21,7 @@ class TestSubWhisperTranscriberBasic:
             transcriber = SubWhisperTranscriber(model_name="small")
             assert transcriber.model_name == "small"
             assert transcriber.language is None
-            assert transcriber.device is None
+            assert transcriber.device == "cpu"
 
     def test_init_with_invalid_model(self) -> None:
         """Test initialization with invalid model name."""
@@ -52,7 +52,7 @@ class TestSubWhisperTranscriberBasic:
             model = transcriber.model
 
             # Now it should be loaded
-            mock_load.assert_called_once_with("small", device=None)
+            mock_load.assert_called_once_with("small", device="cpu")
             assert model == mock_model
 
     def test_model_loading_error(self) -> None:

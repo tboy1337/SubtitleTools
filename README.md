@@ -45,7 +45,7 @@ SubtitleTools provides a complete subtitle processing pipeline:
 
 ### Prerequisites
 
-1. **Python 3.8+**
+1. **Python 3.12+**
 2. **FFmpeg** (for video/audio processing)
 
 ### Installing FFmpeg
@@ -79,23 +79,37 @@ sudo dnf install ffmpeg
 
 ### Installing SubtitleTools
 
+#### Using pip (Recommended)
+
+The easiest way to install SubtitleTools is directly from PyPI:
+
+```bash
+pip install subtitletools
+```
+
+That's it! The `subtitletools` command will be available in your terminal.
+
 #### From Source
+
+Alternatively, you can install from source for development or to get the latest unreleased features:
+
 ```bash
 git clone https://github.com/tboy1337/SubtitleTools.git
 cd SubtitleTools
-pip install -r requirements.txt
 
-# For development
-pip install -r requirements-dev.txt
+# Install with development dependencies
+pip install -e ".[dev]"
 ```
 
-#### Using the Tool
-```bash
-# Direct execution
-python run.py --help
+### Releases
 
-# After installation  
+Pre-built Windows executables are published on [GitHub Releases](https://github.com/tboy1337/SubtitleTools/releases) alongside each tagged version. pip installs remain the recommended cross-platform option.
+
+#### Using the Tool
+
+```bash
 python -m subtitletools --help
+subtitletools --help
 ```
 
 ## 🚀 Quick Start
@@ -103,40 +117,40 @@ python -m subtitletools --help
 ### Generate Subtitles from Video
 ```bash
 # Basic transcription
-python run.py transcribe video.mp4
+python -m subtitletools transcribe video.mp4
 
 # With specific model and language
-python run.py transcribe video.mp4 --model medium --language en
+python -m subtitletools transcribe video.mp4 --model medium --language en
 
 # Batch process directory
-python run.py transcribe videos/ --batch --output subtitles/
+python -m subtitletools transcribe videos/ --batch --output subtitles/
 ```
 
 ### Translate Existing Subtitles
 ```bash
 # Translate English to Spanish
-python run.py translate input.srt output.srt --src-lang en --target-lang es
+python -m subtitletools translate input.srt output.srt --src-lang en --target-lang es
 
 # Batch translate directory
-python run.py translate subtitles/ translated/ --batch --src-lang en --target-lang fr
+python -m subtitletools translate subtitles/ translated/ --batch --src-lang en --target-lang fr
 ```
 
 ### Convert Encoding
 ```bash
 # Convert to specific encoding
-python run.py encode input.srt --to-encoding utf-8
+python -m subtitletools encode input.srt --to-encoding utf-8
 
 # Convert to recommended encodings for Thai
-python run.py encode thai_subtitle.srt --recommended --language th
+python -m subtitletools encode thai_subtitle.srt --recommended --language th
 ```
 
 ### Complete Workflow
 ```bash
 # Generate and translate subtitles in one go
-python run.py workflow video.mp4 --target-lang es --model small
+python -m subtitletools workflow video.mp4 --target-lang es --model small
 
 # With post-processing
-python run.py workflow video.mp4 --target-lang fr --fix-common-errors --remove-hi
+python -m subtitletools workflow video.mp4 --target-lang fr --fix-common-errors --remove-hi
 ```
 
 ## Subtitle Post-Processing
@@ -145,13 +159,13 @@ SubtitleTools includes built-in subtitle post-processing functionality with no e
 
 ```bash
 # Fix common errors
-python run.py workflow video.mp4 --fix-common-errors
+python -m subtitletools workflow video.mp4 --fix-common-errors
 
 # Remove text for hearing impaired
-python run.py workflow video.mp4 --remove-hi
+python -m subtitletools workflow video.mp4 --remove-hi
 
 # Apply multiple fixes at once
-python run.py workflow video.mp4 --fix-common-errors --remove-hi --auto-split-long-lines
+python -m subtitletools workflow video.mp4 --fix-common-errors --remove-hi --auto-split-long-lines
 ```
 
 Available post-processing options:
@@ -219,34 +233,41 @@ Configuration is handled through command-line arguments. The tool automatically 
 
 ## 🧪 Development
 
-### Running Tests
+Install the package with development dependencies:
+
 ```bash
-# Run all tests
+pip install -e ".[dev]"
+```
+
+Alternatively, install runtime and dev dependencies separately:
+
+```bash
+pip install -e .
+pip install -r requirements-dev.txt
+```
+
+Run the local verification script (formatting, type checks, lint, security scan, tests):
+
+```bash
+py scripts/verify.py
+py scripts/verify.py --fix
+```
+
+### Running Tests
+
+```bash
 pytest
-
-# Run with coverage
 pytest --cov=src
-
-# Run specific test categories
 pytest -m unit
 pytest -m integration
 ```
 
-### Code Quality
-```bash
-# Format code
-black src/
-isort src/
-
-# Linting
-pylint src/
-mypy src/
-```
+Tests enforce coverage reporting (see `pytest.ini` and `.coveragerc`). `py scripts/verify.py` runs the full local quality gate before release.
 
 ## 📊 Performance Tips
 
 ### Transcription
-- Use GPU acceleration when available
+- Transcription runs on CPU (no GPU required or supported)
 - Start with smaller models for testing
 - Use batch processing for multiple files
 - Consider splitting very large files

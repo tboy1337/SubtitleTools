@@ -12,6 +12,7 @@ import traceback
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
+from ._version import get_version
 from .config.settings import (
     DEFAULT_ENCODING,
     DEFAULT_SRC_LANGUAGE,
@@ -71,7 +72,7 @@ For more information, visit: https://github.com/tboy1337/SubtitleTools
     parser.add_argument(
         "--version",
         action="version",
-        version="SubtitleTools 1.0.0",
+        version=f"SubtitleTools {get_version()}",
     )
 
     parser.add_argument(

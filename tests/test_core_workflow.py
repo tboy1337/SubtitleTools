@@ -1217,7 +1217,7 @@ class TestWorkflowMissingCoverage:
                         mock_transcriber = Mock()
                         mock_transcriber.get_model_info.return_value = {
                             "model": "large",
-                            "device": "cuda",
+                            "device": "cpu",
                         }
                         mock_transcriber_class.return_value = mock_transcriber
 

@@ -54,14 +54,14 @@ class SubWhisperTranscriber:
         self,
         model_name: str = DEFAULT_WHISPER_MODEL,
         language: Optional[str] = None,
-        device: Optional[str] = None,
+        device: str = "cpu",
     ):
         """Initialize the transcriber.
 
         Args:
             model_name: Whisper model name to use
             language: Language code for transcription (None for auto-detect)
-            device: Device to use for processing (None for auto-detect)
+            device: PyTorch device for inference (CPU-only; defaults to ``cpu``)
 
         Raises:
             TranscriptionError: If model is invalid or cannot be loaded
@@ -218,7 +218,7 @@ class SubWhisperTranscriber:
                     "Converting stereo to mono (shape: %s)",
                     getattr(audio_data, "shape", "unknown"),
                 )
-                audio_data = cast(object, np.mean(audio_data, axis=1))
+                audio_data = cast(object, np.mean(cast(Any, audio_data), axis=1))
 
             # Resample to 16kHz if needed
             if sample_rate != 16000:

@@ -10,11 +10,13 @@ class TestMainInit:
     def test_version_info(self) -> None:
         """Test that version information is available."""
         import subtitletools
+        from subtitletools._version import get_version
 
         assert hasattr(subtitletools, "__version__")
         assert hasattr(subtitletools, "__author__")
         assert hasattr(subtitletools, "__email__")
-        assert subtitletools.__version__ == "1.0.0"
+        assert subtitletools.__version__ == get_version()
+        assert subtitletools.__version__ != "unknown"
         assert subtitletools.__author__ == "tboy1337"
 
     def test_successful_imports(self) -> None:
