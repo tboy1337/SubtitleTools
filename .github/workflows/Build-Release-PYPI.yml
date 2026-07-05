@@ -9,6 +9,11 @@ on:
       - main
     tags:
       - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.sha }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   id-token: write
