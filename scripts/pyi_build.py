@@ -30,7 +30,7 @@ def main() -> int:
         "PyInstaller",
         "--noconfirm",
         "--log-level",
-        "WARN",
+        "ERROR",
         str(SPEC),
     ]
     print("Running:", " ".join(command), flush=True)
